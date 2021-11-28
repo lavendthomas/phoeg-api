@@ -1,6 +1,6 @@
 import fastify from 'fastify'
 
-import {routes as indexRoutes} from "./routes/index"
+import {routes as indexRoutes} from "./routes"
 import {routes as phoegRoutes} from "./routes/phoeg"
 
 const server = fastify({
