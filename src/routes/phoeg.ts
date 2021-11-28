@@ -1,5 +1,8 @@
 import {FastifyInstance} from "fastify";
-import {IQuerystring, IHeaders} from '../libs/query';
+
+interface ISqlQueryArgs {
+    sqlquery: string
+}
 
 /**
  * Execute a request to the phoeg database
@@ -9,14 +12,11 @@ import {IQuerystring, IHeaders} from '../libs/query';
  */
 export async function routes(fastify: FastifyInstance, options: any) {
     fastify.get<{
-        Querystring: IQuerystring,
-        Headers: IHeaders
+        Querystring: ISqlQueryArgs,
     }>('/phoeg', async (request, reply) => {
-        const {username, password} = request.query
-        const customerHeader = request.headers['h-Custom']
+        const {sqlquery} = request.query
         // do something with request data
-        console.log(username + ":" + password)
-
+        console.log(sqlquery)
         return `logged in!`
     })
 }

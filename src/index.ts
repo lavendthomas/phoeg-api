@@ -2,6 +2,7 @@ import fastify from 'fastify'
 
 import {routes as indexRoutes} from "./routes"
 import {routes as phoegRoutes} from "./routes/phoeg"
+import {routes as examplePhoegRoutes} from  "./routes/examplequery"
 
 const server = fastify({
     logger: {level: 'debug'}
@@ -9,6 +10,7 @@ const server = fastify({
 
 server.register(indexRoutes)
 server.register(phoegRoutes)
+server.register(examplePhoegRoutes)
 
 
 server.listen(8080, (err, address) => {
