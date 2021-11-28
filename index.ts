@@ -1,4 +1,4 @@
-import fastify, {FastifyLoggerInstance} from 'fastify'
+import fastify from 'fastify'
 
 import {routes as indexRoutes} from "./routes/index"
 import {routes as phoegRoutes} from "./routes/phoeg"
