@@ -1,37 +1,14 @@
-import fastify from 'fastify'
+import fastify, {FastifyLoggerInstance} from 'fastify'
 
-const server = fastify()
+import {routes as indexRoutes} from "./routes/index"
+import {routes as phoegRoutes} from "./routes/phoeg"
 
-
-interface IQuerystring {
-    username: string;
-    password: string;
-}
-
-interface IHeaders {
-    'h-Custom': string;
-}
-
-
-server.get('/ping', async (request, reply) => {
-    return 'pong\n'
+const server = fastify({
+    logger: {level: 'debug'}
 })
 
-server.get<{
-    Querystring: IQuerystring,
-    Headers: IHeaders
-}>('/auth', async (request, reply) => {
-    const { username, password } = request.query
-    const customerHeader = request.headers['h-Custom']
-    // do something with request data
-    console.log(username + ":" + password)
-
-    return `logged in!`
-})
-
-server.get('/', function (request, reply) {
-    reply.code(200).send({ hello: 'world' })
-})
+server.register(indexRoutes)
+server.register(phoegRoutes)
 
 
 server.listen(8080, (err, address) => {
