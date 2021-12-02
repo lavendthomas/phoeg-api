@@ -2,7 +2,6 @@ import {FastifyInstance} from "fastify";
 import phoeg from "../db/phoeg";
 import {get_default_query} from "../queries/DefaultQueries";
 import {createClient} from "redis";
-import {promisify} from "util";
 
 interface IPointsQueryArgs {
     nb_val: number
@@ -18,7 +17,6 @@ export async function routes(fastify: FastifyInstance, options: any) {
     fastify.get<{
         Querystring: IPointsQueryArgs
     }>('/points', async (request, reply) => {
-        // do something with request data
 
         if (!request.query.nb_val) {
             reply.code(400).send({message: "Please provide a nb_val."})
@@ -34,8 +32,8 @@ export async function routes(fastify: FastifyInstance, options: any) {
         await client.connect()
 
         if (await client.exists("key")) {
-
-            reply.send(JSON.parse(await client.get("key") as string))
+            reply.type("application/json; charset=utf-8").send(await client.get("key") as string)
+            //reply.send(JSON.parse(await client.get("key") as string))
 
         } else {
 

@@ -11,5 +11,5 @@ FROM num_vertices n
 JOIN num_edges m USING(signature)
 JOIN num_col numcol USING (signature)
 JOIN chromatic_number chi USING (signature)
-WHERE n.val = 8
+WHERE n.val = $1
 ORDER BY m, numcol, chi
