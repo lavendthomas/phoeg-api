@@ -8,11 +8,11 @@ import phoeg from "../db/phoeg";
  * @param options
  */
 export async function routes(fastify: FastifyInstance, options: any) {
-    fastify.get('/examplequery', async (request, reply) => {
+    fastify.get('/example', async (request, reply) => {
         // do something with request data
 
         const query = `
-SELECT P.val AS eci, num_edges.val AS m, \
+SELECT P.val AS eci, num_edges.val AS m,
 COUNT(*) AS mult
 FROM eci P
 JOIN num_vertices USING(signature)
@@ -21,7 +21,7 @@ WHERE num_vertices.val = 7
 GROUP BY m, eci;
 `.replace(/\n/g, ' ')
 
-        fastify.log.debug(query)
+        fastify.log.debug("Querying" + query)
 
         phoeg.query(query, [], (error, result) => {
             if (error) {
@@ -29,7 +29,7 @@ GROUP BY m, eci;
                 reply.code(400).send({})
             } else {
                 fastify.log.info(result)
-                reply.send(result.rows[0])
+                reply.send(result.rows)
             }
 
         })

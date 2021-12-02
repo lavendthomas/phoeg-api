@@ -11,8 +11,6 @@ const pool = new Pool({
 
 export default {
     query: async (text: string, params: any, callback: (err: Error, result: QueryResult) => any) => {
-        console.debug("Querying: " + text)
-        // return pool.query(text, params, callback)
 
         const client = new Client({
             user: POSTGRESQL_LOGIN.user,
@@ -21,6 +19,7 @@ export default {
             password: POSTGRESQL_LOGIN.password,
             port: POSTGRESQL_LOGIN.port,
         })
+
         await client.connect()
         return client.query(text, params, callback)
     },
