@@ -1,7 +1,8 @@
 import {Client, Pool, QueryResult} from "pg";
-import {POSTGRESQL_LOGIN} from "../.env";
+import {POSTGRESQL_LOGIN, REDIS_LOGIN} from "../.env";
 import {createClient} from "redis";
 import {sha1} from "sha.js";
+import { RedisClientType } from "@node-redis/client/dist/lib/client";
 
 class PooledDB {
 
@@ -22,8 +23,8 @@ class PooledDB {
     public static async getInstance() {
         if (!PooledDB.instance) {
             PooledDB.instance = new PooledDB();
+            await PooledDB._pool.connect()
         }
-        await PooledDB._pool.connect()
         return PooledDB.instance;
     }
 
@@ -33,7 +34,29 @@ class PooledDB {
 }
 
 
-class RedisCient {
+class RedisClient {
+
+    get client(): RedisClientType<any, any> {
+        return this._client;
+    }
+
+    private static instance: RedisClient
+
+    private _client: RedisClientType<any, any>
+
+    private constructor() {
+        this._client = createClient({
+            url: `redis://${REDIS_LOGIN.user}:${REDIS_LOGIN.password}@${REDIS_LOGIN.host}:${REDIS_LOGIN.port}`
+        })
+    }
+
+    public static async getInstance() {
+        if (!RedisClient.instance) {
+            RedisClient.instance = new RedisClient();
+            await this.instance._client.connect()
+        }
+        return RedisClient.instance;
+    }
 
 }
 
@@ -48,22 +71,19 @@ export default {
     cached_query: async (text: string, params: any[], callback: (err: Error, result: QueryResult) => any) => {
         const psql_pool = await PooledDB.getInstance()
 
-        const redis_client = createClient({
-            url: 'redis://:@localhost:6379' // No username nor password     is needed
-        })
-        await redis_client.connect()
+        const redis_client = await RedisClient.getInstance()
 
         const redis_key = new sha1().update("text").digest('hex') + JSON.stringify(params)
 
-        if (await redis_client.exists(redis_key)) {
+        if (await redis_client.client.exists(redis_key)) {
             console.debug("Received " + redis_key + " from cache.")
-            const query_result: QueryResult = JSON.parse(await redis_client.get(redis_key) as string)
+            const query_result: QueryResult = JSON.parse(await redis_client.client.get(redis_key) as string)
             // @ts-ignore
             callback(null, query_result)
         } else {
             return psql_pool.query(text, params, (err: Error, result: QueryResult) => {
                 console.debug("Querying " + redis_key + " and adding it to the cache.")
-                redis_client.set(redis_key, JSON.stringify(result))
+                redis_client.client.set(redis_key, JSON.stringify(result))
                 callback(err, result)
             })
         }
