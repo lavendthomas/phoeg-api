@@ -1,6 +1,5 @@
 import fastify from 'fastify'
-
-import {CacheStorage} from "./db/CacheStorage";
+import fastify_compress from "fastify-compress";
 
 import {routes as endpointRoutes} from "./routes/endpoints"
 import {routes as indexRoutes} from "./routes"
@@ -12,6 +11,11 @@ import {routes as graphsRoutes} from "./routes/graphs"
 const server = fastify({
     logger: {level: 'debug'}
 })
+
+server.register(
+    fastify_compress,
+    { threshold: 1024 }
+)
 
 server.register(endpointRoutes)
 server.register(indexRoutes)
