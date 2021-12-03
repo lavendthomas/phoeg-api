@@ -6,7 +6,7 @@ with tmp as
     FROM num_edges m
     JOIN num_vertices n USING (signature)
     JOIN av_col avcol USING (signature)
-    WHERE n.val = 8
+    WHERE n.val = $1
     GROUP BY m.val, avcol.val
     ORDER BY m.val, avcol.val
 ),

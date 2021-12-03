@@ -2,7 +2,7 @@ import {FastifyInstance} from "fastify";
 import phoeg from "../db/phoeg";
 import {get_default_query} from "../queries/DefaultQueries";
 
-interface IGraphsQueryArgs {
+interface IPolytopQueryArgs {
     nb_val: number
 }
 
@@ -14,14 +14,14 @@ interface IGraphsQueryArgs {
  */
 export async function routes(fastify: FastifyInstance, options: any) {
     fastify.get<{
-        Querystring: IGraphsQueryArgs
-    }>('/graphs', async (request, reply) => {
+        Querystring: IPolytopQueryArgs
+    }>('/polytop', async (request, reply) => {
 
         if (!request.query.nb_val) {
             reply.code(400).send({message: "Please provide a nb_val."})
         }
 
-        const query = get_default_query("graphs")
+        const query = get_default_query("poly-json")
 
         await phoeg.cached_query(query, [request.query.nb_val], async (error, result) => {
             if (error) {
