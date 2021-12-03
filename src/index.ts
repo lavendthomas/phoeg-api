@@ -2,6 +2,7 @@ import fastify from 'fastify'
 
 import {CacheStorage} from "./db/CacheStorage";
 
+import {routes as endpointRoutes} from "./routes/endpoints"
 import {routes as indexRoutes} from "./routes"
 import {routes as phoegRoutes} from "./routes/phoeg"
 import {routes as examplePhoegRoutes} from  "./routes/examplequery"
@@ -12,6 +13,7 @@ const server = fastify({
     logger: {level: 'debug'}
 })
 
+server.register(endpointRoutes)
 server.register(indexRoutes)
 server.register(phoegRoutes)
 server.register(examplePhoegRoutes)
