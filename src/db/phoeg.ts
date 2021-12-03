@@ -1,8 +1,7 @@
 import {Client, Pool, QueryResult} from "pg";
 import {POSTGRESQL_LOGIN} from "../.env";
 import {createClient} from "redis";
-import { encode, decode } from "@msgpack/msgpack";
-
+import {sha1} from "sha.js";
 
 const pool = new Pool({
     user: POSTGRESQL_LOGIN.user,
@@ -42,13 +41,16 @@ export default {
         })
         await redis_client.connect()
 
-        const redis_key = text + JSON.stringify(params)
+        const redis_key = new sha1().update("text").digest('hex') + JSON.stringify(params)
 
         if (await redis_client.exists(redis_key)) {
+            console.debug("Received " + redis_key + " from cache.")
             const query_result: QueryResult = JSON.parse(await redis_client.get(redis_key) as string)
-            return query_result
+            // @ts-ignore
+            callback(null, query_result)
         } else {
             return psql_client.query(text, params, (err: Error, result: QueryResult) => {
+                console.debug("Querying " + redis_key + " and adding it to the cache.")
                 redis_client.set(redis_key, JSON.stringify(result))
                 callback(err, result)
             })
