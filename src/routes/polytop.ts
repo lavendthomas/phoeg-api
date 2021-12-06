@@ -33,8 +33,8 @@ export async function routes(fastify: FastifyInstance, options: any) {
         }
     }, async (request, reply) => {
 
-        const query_raw = get_default_query("poly-json")
-        const query = format(query_raw, request.query.invariant)
+        const raw_query = get_default_query("poly-json")
+        const query = format(raw_query, request.query.invariant)
 
         await phoeg.cached_query(query, [request.query.nb_val], async (error, result) => {
             if (error) {

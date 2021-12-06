@@ -1,5 +1,9 @@
 import {FastifyInstance} from "fastify";
 
+import {graphsQueryArgs} from "./graphs"
+import {polytopQueryArgs} from "./polytop"
+import {pointsQueryArgs} from "./points"
+
 
 export async function routes(fastify: FastifyInstance, options: any) {
     fastify.get('/endpoints', async (request, reply) => {
@@ -7,17 +11,21 @@ export async function routes(fastify: FastifyInstance, options: any) {
             endpoints: [
                 {
                     path: '/graphs',
-                    params: {
-                        nb_val: 'number'
-                    }
+                    params: graphsQueryArgs
                 },
                 {
                     path: '/points',
-                    params: {
-                        nb_val: 'number'
-                    }
+                    params: pointsQueryArgs
+                },
+                {
+                    path: 'polytop',
+                    params: polytopQueryArgs
                 }
-            ]
+            ],
+            invariants: {
+                avcol: {},
+                numcol: {}
+            }
         })
     })
 }

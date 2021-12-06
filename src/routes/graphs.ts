@@ -4,7 +4,7 @@ import format from "pg-format";
 import {get_default_query} from "../queries/DefaultQueries";
 import {Static, Type} from '@sinclair/typebox';
 
-const graphsQueryArgs = Type.Object({
+export const graphsQueryArgs = Type.Object({
     nb_val: Type.Number(),
     invariant: Type.String(),
     m: Type.Optional(Type.Number()),
@@ -12,7 +12,7 @@ const graphsQueryArgs = Type.Object({
     chi: Type.Optional(Type.Number())
 })
 
-type IGraphsQueryArgs = Static<typeof graphsQueryArgs>;
+export type IGraphsQueryArgs = Static<typeof graphsQueryArgs>;
 
 
 interface IGraphsQueryResults {
@@ -72,8 +72,6 @@ export async function routes(fastify: FastifyInstance, options: any) {
                 const results: IGraphsQueryResults = result.rows[0].json_build_object
                 reply.send(results)
             }
-
         })
-
     })
 }
