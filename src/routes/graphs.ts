@@ -2,15 +2,18 @@ import {FastifyInstance} from "fastify";
 import phoeg from "../db/phoeg";
 import format from "pg-format";
 import {get_default_query} from "../queries/DefaultQueries";
-import {QueryResult} from "pg";
+import {Static, Type} from '@sinclair/typebox';
 
-export interface IGraphsQueryArgs {
-    nb_val: number,
-    invariant: string,
-    m?: number,
-    invariant_value?: number
-    chi?: number
-}
+const graphsQueryArgs = Type.Object({
+    nb_val: Type.Number(),
+    invariant: Type.String(),
+    m: Type.Optional(Type.Number()),
+    invariant_value: Type.Optional(Type.Number()),
+    chi: Type.Optional(Type.Number())
+})
+
+type IGraphsQueryArgs = Static<typeof graphsQueryArgs>;
+
 
 interface IGraphsQueryResults {
     sig: string[],
@@ -29,6 +32,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
     fastify.get<{
         Querystring: IGraphsQueryArgs
     }>('/graphs', {
+        schema: {querystring: graphsQueryArgs},
         preValidation: (request, reply, done) => {
             done(!request.query.nb_val ? new Error("Please provide a nb_val.") : undefined)
             done(!request.query.invariant ? new Error("Please provide an invariant.") : undefined)
@@ -65,7 +69,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
                 reply.code(400).send({})
             } else {
                 //fastify.log.info(result)
-                let results: IGraphsQueryResults = result.rows[0].json_build_object
+                const results: IGraphsQueryResults = result.rows[0].json_build_object
                 reply.send(results)
             }
 

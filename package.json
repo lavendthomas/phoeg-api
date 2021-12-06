@@ -16,6 +16,7 @@
   "dependencies": {
     "fastify": "^3.24.1",
     "fastify-compress": "^3.7.0",
+    "@sinclair/typebox": "^0.23.1",
     "pg": "^8.7.1",
     "pg-format": "^1.0.4",
     "redis": "^4.0.0",
