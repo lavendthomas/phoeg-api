@@ -2,14 +2,14 @@ WITH data AS (
     SELECT
         n.signature AS sig,
         m.val AS m,
-        numcol.val AS numcol,
+        invariant.val AS invariant,
         chi.val AS chi
     FROM num_vertices n
     JOIN num_edges m USING(signature)
-    JOIN num_col numcol USING (signature)
+    JOIN %I invariant USING (signature)
     JOIN chromatic_number chi USING (signature)
     WHERE n.val = $1
-    ORDER BY m, numcol, chi
+    ORDER BY m, invariant, chi
 )
 -- Same as graphs.sql but uses json functions :
 -- row_to_json converts a row into a json dict
@@ -18,7 +18,7 @@ WITH data AS (
 SELECT json_build_object(
     'sig',array_to_json(array_agg(sig)),
     'm',array_to_json(array_agg(m)),
-    'numcol',array_to_json(array_agg(numcol)),
+    'invariant',array_to_json(array_agg(invariant)),
     'chi',array_to_json(array_agg(chi))
 )
 FROM data;

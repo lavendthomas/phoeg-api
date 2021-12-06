@@ -82,10 +82,16 @@ export default {
             // @ts-ignore
             callback(null, query_result)
         } else {
-            return psql_pool.query(text, params, (err: Error, result: QueryResult) => {
-                console.debug("Querying " + redis_key + " and adding it to the cache.")
-                redis_client.client.set(redis_key, JSON.stringify(result))
-                callback(err, result)
+            await psql_pool.query(text, params, (error: Error, result: QueryResult) => {
+                if (error) {
+                    console.error(error)
+                    // @ts-ignore
+                    callback(error, null)
+                } else {
+                    console.debug("Querying " + redis_key + " and adding it to the cache.")
+                    redis_client.client.set(redis_key, JSON.stringify(result))
+                    callback(error, result)
+                }
             })
         }
     }
