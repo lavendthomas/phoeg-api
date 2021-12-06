@@ -21,7 +21,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
             reply.code(400).send({message: "Please provide a nb_val."})
         }
 
-        const query = get_default_query("graphs")
+        const query = get_default_query("graphs-json-transpose")
 
         await phoeg.cached_query(query, [request.query.nb_val], async (error, result) => {
             if (error) {

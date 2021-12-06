@@ -2,7 +2,7 @@ import {Client, Pool, QueryResult} from "pg";
 import {POSTGRESQL_LOGIN, REDIS_LOGIN} from "../.env";
 import {createClient} from "redis";
 import {sha1} from "sha.js";
-import { RedisClientType } from "@node-redis/client/dist/lib/client";
+import {RedisClientType} from "@node-redis/client/dist/lib/client";
 
 class PooledDB {
 
@@ -54,6 +54,7 @@ class RedisClient {
         if (!RedisClient.instance) {
             RedisClient.instance = new RedisClient();
             await this.instance._client.connect()
+            await this.instance._client.flushAll();
         }
         return RedisClient.instance;
     }
@@ -73,7 +74,7 @@ export default {
 
         const redis_client = await RedisClient.getInstance()
 
-        const redis_key = new sha1().update("text").digest('hex') + JSON.stringify(params)
+        const redis_key = new sha1().update(text).digest('hex') + JSON.stringify(params)
 
         if (await redis_client.client.exists(redis_key)) {
             console.debug("Received " + redis_key + " from cache.")
