@@ -2,6 +2,7 @@ import {FastifyInstance} from "fastify";
 import phoeg from "../db/phoeg";
 import format from "pg-format";
 import {get_default_query} from "../queries/DefaultQueries";
+import {QueryResult} from "pg";
 
 export interface IGraphsQueryArgs {
     nb_val: number,
@@ -9,6 +10,13 @@ export interface IGraphsQueryArgs {
     m?: number,
     invariant_value?: number
     chi?: number
+}
+
+interface IGraphsQueryResults {
+    sig: string[],
+    m: number[],
+    invariant: number[],
+    chi: number[]
 }
 
 /**
@@ -20,21 +28,19 @@ export interface IGraphsQueryArgs {
 export async function routes(fastify: FastifyInstance, options: any) {
     fastify.get<{
         Querystring: IGraphsQueryArgs
-    }>('/graphs', async (request, reply) => {
+    }>('/graphs', {
+        preValidation: (request, reply, done) => {
+            done(!request.query.nb_val ? new Error("Please provide a nb_val.") : undefined)
+            done(!request.query.invariant ? new Error("Please provide an invariant.") : undefined)
 
-        const acceptable_invariants = ["av_col" , "num_col"]
+            const acceptable_invariants = ["av_col", "num_col"]
+            done(!acceptable_invariants.includes(request.query.invariant)
+                ? new Error("Please provide an invariant in " + acceptable_invariants.join(", ") + ".")
+                : undefined) // only accept valid invariants
+        }
+    }, async (request, reply) => {
+
         const query_params = [request.query.nb_val]
-
-        if (!request.query.nb_val) {
-            reply.code(400).send({message: "Please provide a nb_val."})
-        }
-
-        if (!request.query.invariant) {
-            reply.code(400).send({message: "Please provide an invariant."})
-        }
-        if (!acceptable_invariants.includes(request.query.invariant)) {
-            reply.code(400).send({message: "Please provide an invariant in " + acceptable_invariants.join(", ") + "."})
-        }
 
         let raw_query = get_default_query("graphs-json-transpose-1")
         let cnt = 2
@@ -59,7 +65,8 @@ export async function routes(fastify: FastifyInstance, options: any) {
                 reply.code(400).send({})
             } else {
                 //fastify.log.info(result)
-                reply.send(result.rows[0].json_build_object)
+                let results: IGraphsQueryResults = result.rows[0].json_build_object
+                reply.send(results)
             }
 
         })
