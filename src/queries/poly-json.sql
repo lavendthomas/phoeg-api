@@ -2,17 +2,17 @@
 with tmp as
 (
     -- Select the points to consider for the convex hull
-    SELECT m.val as m, avcol.val AS avcol
+    SELECT m.val as m, invariant.val AS invariant
     FROM num_edges m
     JOIN num_vertices n USING (signature)
-    JOIN av_col avcol USING (signature)
+    JOIN %I invariant USING (signature)
     WHERE n.val = $1
-    GROUP BY m.val, avcol.val
-    ORDER BY m.val, avcol.val
+    GROUP BY m.val, invariant.val
+    ORDER BY m.val, invariant.val
 ),
 polytable as (
     -- Build the convex hull and output it as json
-    SELECT st_asgeojson(ST_ConvexHull(ST_Collect(ST_Point(avcol, m)))) as poly
+    SELECT st_asgeojson(ST_ConvexHull(ST_Collect(ST_Point(invariant, m)))) as poly
     FROM tmp
 ),
 points as (
