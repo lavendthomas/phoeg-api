@@ -54,7 +54,6 @@ class RedisClient {
         if (!RedisClient.instance) {
             RedisClient.instance = new RedisClient();
             await this.instance._client.connect()
-            await this.instance._client.flushAll();
         }
         return RedisClient.instance;
     }

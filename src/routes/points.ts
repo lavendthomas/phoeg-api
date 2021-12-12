@@ -3,6 +3,8 @@ import phoeg from "../db/phoeg";
 import {get_default_query} from "../queries/DefaultQueries";
 import format from "pg-format";
 import {Static, Type} from "@sinclair/typebox";
+import {NullAggregator} from "../db/aggregator";
+import {NullFilter} from "../db/filter";
 
 export const pointsQueryArgs = Type.Object({
     nb_val: Type.Number(),
@@ -11,12 +13,15 @@ export const pointsQueryArgs = Type.Object({
 
 export type IPointsQueryArgs = Static<typeof pointsQueryArgs>;
 
-interface IPointsQueryResults {
+export interface IPointsQueryResults {
     m: number[],
     invariant: number[],
     chi: number[],
     mult: number[]
 }
+
+const aggregator = new NullAggregator()
+const filter = new NullFilter()
 
 /**
  * Execute a request to the phoeg database
@@ -43,13 +48,13 @@ export async function routes(fastify: FastifyInstance, options: any) {
         const raw_query = get_default_query("points-json-transpose")
         const query = format(raw_query, request.query.invariant)
 
-        await phoeg.cached_query(query, [request.query.nb_val], async (error, result) => {
+        await phoeg.cached_query(query, [request.query.nb_val], (error, result) => {
             if (error) {
                 fastify.log.error(error)
                 reply.code(400).send({})
             } else {
                 const results: IPointsQueryResults = result.rows[0].json_build_object
-                reply.send(results)
+                reply.send(aggregator.aggregate(filter.filter(results)))
             }
         })
     })

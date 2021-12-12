@@ -22,10 +22,14 @@ export async function routes(fastify: FastifyInstance, options: any) {
                     params: polytopQueryArgs
                 }
             ],
-            invariants: {
-                avcol: {},
-                numcol: {}
-            }
+            invariants: [
+                {
+                    name: "avcol"
+                },
+                {
+                    name: "numcol"
+                }
+            ]
         })
     })
 }
