@@ -1,5 +1,6 @@
 import fastify from 'fastify'
 import fastify_compress from "fastify-compress";
+import fastifyCors from "fastify-cors";
 
 import {routes as endpointRoutes} from "./routes/endpoints"
 import {routes as indexRoutes} from "./routes"
@@ -12,9 +13,19 @@ const server = fastify({
     logger: {level: 'debug'}
 })
 
+/**
+ * Enable compression
+ */
 server.register(
     fastify_compress,
     { threshold: 1024 }
+)
+
+/**
+ * Allow Cross-origin resource sharing
+ */
+server.register(
+    fastifyCors
 )
 
 server.register(endpointRoutes)

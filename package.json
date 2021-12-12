@@ -8,15 +8,17 @@
     "postbuild": "cp ./src/queries/*.sql ./build/queries",
     "start": "node ./build/index.js",
     "dev": "ts-node-dev --respawn ./src/index.ts",
+    "lint": "eslint . --ext .ts,.tsx",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@sinclair/typebox": "^0.23.1",
     "fastify": "^3.24.1",
     "fastify-compress": "^3.7.0",
-    "@sinclair/typebox": "^0.23.1",
+    "fastify-cors": "^6.0.2",
     "pg": "^8.7.1",
     "pg-format": "^1.0.4",
     "redis": "^4.0.0",
