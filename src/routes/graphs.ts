@@ -4,12 +4,20 @@ import format from "pg-format";
 import {get_default_query} from "../queries/DefaultQueries";
 import {Static, Type} from '@sinclair/typebox';
 
+const ACCEPTABLE_INVARIANTS = ["av_col", "num_col"]
+const ACCEPTABLE_NB_VAL = Array.from(Array(10).keys())
+
 export const graphsQueryArgs = Type.Object({
-    nb_val: Type.Number(),
-    invariant: Type.String(),
-    m: Type.Optional(Type.Number()),
-    invariant_value: Type.Optional(Type.Number()),
-    chi: Type.Optional(Type.Number())
+    nb_val: Type.Union(ACCEPTABLE_NB_VAL.map(nb => Type.Literal(nb)),
+        {default: 1, description: "Maximum size of the graphs."}),
+    invariant: Type.Union(ACCEPTABLE_INVARIANTS.map(i => Type.Literal(i)),
+        {default: ACCEPTABLE_INVARIANTS[0], description: "Type of invariant to study."}),
+    m: Type.Optional(Type.Number(
+        {default: 1, description: "description"})),
+    invariant_value: Type.Optional(Type.Number(
+        {default: 0, minimum: 0, description: "Value of the selected invariant."})),
+    chi: Type.Optional(Type.Number(
+        {default: 0, minimum: 0, description: "Value of chi"}))
 })
 
 export type IGraphsQueryArgs = Static<typeof graphsQueryArgs>;
@@ -37,9 +45,8 @@ export async function routes(fastify: FastifyInstance, options: any) {
             done(!request.query.nb_val ? new Error("Please provide a nb_val.") : undefined)
             done(!request.query.invariant ? new Error("Please provide an invariant.") : undefined)
 
-            const acceptable_invariants = ["av_col", "num_col"]
-            done(!acceptable_invariants.includes(request.query.invariant)
-                ? new Error("Please provide an invariant in " + acceptable_invariants.join(", ") + ".")
+            done(!ACCEPTABLE_INVARIANTS.includes(request.query.invariant)
+                ? new Error("Please provide an invariant in " + ACCEPTABLE_INVARIANTS.join(", ") + ".")
                 : undefined) // only accept valid invariants
         }
     }, async (request, reply) => {
