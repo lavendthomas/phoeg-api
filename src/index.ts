@@ -1,19 +1,23 @@
-import fastify from 'fastify'
+import fastify from 'fastify';
 import fastify_compress from "fastify-compress";
 import fastifyCors from "fastify-cors";
 import fastifySwagger from "fastify-swagger";
-import {API_PORT, SERVER_ADDRESS} from "./.env";
 
+import {API_PATH, API_PORT, SERVER_ADDRESS} from "./.env";
 
 import {routes as endpointRoutes} from "./routes/endpoints"
-import {routes as indexRoutes} from "./routes"
 import {routes as polytopRoutes} from "./routes/polytop"
 import {routes as pointsRoutes} from "./routes/points"
 import {routes as graphsRoutes} from "./routes/graphs"
 import {routes as extremalsRoutes} from "./routes/extremals"
 
 const server = fastify({
-    logger: {level: 'debug'}
+    logger: {level: 'debug'},
+    ajv: {
+        customOptions: {
+            coerceTypes: 'array'        // Accept arrays in querystrings
+        }
+    }
 })
 
 /*
@@ -48,7 +52,7 @@ server.register(
                 url: 'http://informatique.umons.ac.be/phoeg/',
                 description: 'Find more info here'
             },
-            host: `${SERVER_ADDRESS}:${API_PORT}`,
+            host: `${SERVER_ADDRESS}:${API_PORT}${API_PATH}`,
             schemes: ['http'],
             consumes: ['application/json'],
             produces: ['application/json'],
@@ -71,7 +75,6 @@ server.register(
 )
 
 server.register(endpointRoutes)
-server.register(indexRoutes)
 server.register(polytopRoutes)
 server.register(pointsRoutes)
 server.register(graphsRoutes)

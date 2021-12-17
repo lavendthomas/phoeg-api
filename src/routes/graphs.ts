@@ -1,7 +1,7 @@
 import {FastifyInstance} from "fastify";
-import phoeg from "../db/phoeg";
+import phoeg from "../../db/phoeg";
 import format from "pg-format";
-import {get_default_query} from "../queries/DefaultQueries";
+import {get_default_query} from "../../queries/DefaultQueries";
 import {Static, Type} from '@sinclair/typebox';
 
 const ACCEPTABLE_INVARIANTS = ["av_col", "num_col"]
@@ -36,7 +36,7 @@ interface IGraphsQueryResults {
  * @param fastify
  * @param options
  */
-export async function routes(fastify: FastifyInstance, options: any) {
+export default async function routes(fastify: FastifyInstance, options: any) {
     fastify.get<{
         Querystring: IGraphsQueryArgs
     }>('/graphs', {

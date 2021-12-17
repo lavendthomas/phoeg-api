@@ -1,10 +1,10 @@
 import {FastifyInstance} from "fastify";
-import phoeg from "../db/phoeg";
-import {get_default_query} from "../queries/DefaultQueries";
+import phoeg from "../../db/phoeg";
+import {get_default_query} from "../../queries/DefaultQueries";
 import format from "pg-format";
 import {Static, Type} from "@sinclair/typebox";
-import {NullAggregator} from "../db/aggregator";
-import {NullFilter} from "../db/filter";
+import {IdentityAggregator} from "../../db/aggregator";
+import {IdentityFilter} from "../../db/filter";
 
 export const pointsQueryArgs = Type.Object({
     nb_val: Type.Number(),
@@ -20,8 +20,8 @@ export interface IPointsQueryResults {
     mult: number[]
 }
 
-const aggregator = new NullAggregator()
-const filter = new NullFilter()
+const aggregator = new IdentityAggregator()
+const filter = new IdentityFilter()
 
 /**
  * Execute a request to the phoeg database
@@ -29,7 +29,7 @@ const filter = new NullFilter()
  * @param fastify
  * @param options
  */
-export async function routes(fastify: FastifyInstance, options: any) {
+export default async function routes(fastify: FastifyInstance, options: any) {
     fastify.get<{
         Querystring: IPointsQueryArgs
     }>('/points', {

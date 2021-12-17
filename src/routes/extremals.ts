@@ -1,6 +1,6 @@
 import {FastifyInstance} from "fastify";
-import phoeg from "../db/phoeg";
-import {get_default_query} from "../queries/DefaultQueries";
+import phoeg from "../../db/phoeg";
+import {get_default_query} from "../../queries/DefaultQueries";
 
 /**
  * Execute a request to the phoeg database
@@ -8,7 +8,7 @@ import {get_default_query} from "../queries/DefaultQueries";
  * @param fastify
  * @param options
  */
-export async function routes(fastify: FastifyInstance, options: any) {
+export default async function routes(fastify: FastifyInstance, options: any) {
     fastify.get('/extremals', async (request, reply) => {
 
         const query = get_default_query("extremals-json")
