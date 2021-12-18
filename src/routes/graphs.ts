@@ -4,24 +4,18 @@ import format from "pg-format";
 import {get_default_query} from "../queries/DefaultQueries";
 import {Static, Type} from '@sinclair/typebox';
 
+const PATH = "/graphs"
+
 const ACCEPTABLE_INVARIANTS = ["av_col", "num_col"]
 const ACCEPTABLE_NB_VAL = Array.from(Array(10).keys())
 
 export const graphsQueryArgs = Type.Object({
-    nb_val: Type.Union(ACCEPTABLE_NB_VAL.map(nb => Type.Literal(nb)),
+    max_graph_size: Type.Union(ACCEPTABLE_NB_VAL.map(nb => Type.Literal(nb)),
         {default: 1, description: "Maximum size of the graphs."}),
-    invariant: Type.Union(ACCEPTABLE_INVARIANTS.map(i => Type.Literal(i)),
-        {default: ACCEPTABLE_INVARIANTS[0], description: "Type of invariant to study."}),
-    m: Type.Optional(Type.Number(
-        {default: 1, description: "description"})),
-    invariant_value: Type.Optional(Type.Number(
-        {default: 0, minimum: 0, description: "Value of the selected invariant."})),
-    chi: Type.Optional(Type.Number(
-        {default: 0, minimum: 0, description: "Value of chi"})),
     invariants: Type.Array(Type.Union(ACCEPTABLE_INVARIANTS.map(i => Type.Literal(i))),
-        {minItems: 2}),
-    invariant_values: Type.Array(Type.Number(),
-        {minItems: 2})
+        {minItems: 2, description: "Name of each invariant to analyse. The first two will be used on the axis."}),
+    invariant_values: Type.Optional(Type.Array(Type.Number(),
+        {description: "Values for each of the axis."}))
 })
 
 export type IGraphsQueryArgs = Static<typeof graphsQueryArgs>;
@@ -34,6 +28,32 @@ interface IGraphsQueryResults {
     chi: number[]
 }
 
+
+function part1(): string {
+    return `WITH data AS (
+SELECT
+    n.signature AS sig,\n`
+}
+
+function part2(): string {
+    return `    FROM num_vertices n\n`
+}
+
+function part3(): string {
+    return `    WHERE n.val = $1\n`
+}
+
+function part4(): string {
+    return `
+SELECT json_build_object(
+    'sig',array_to_json(array_agg(sig)),\n`
+}
+
+function part5(): string {
+    return `)
+FROM data;`
+}
+
 /**
  * Execute a request to the phoeg database
  * WARNING: unsafe
@@ -43,36 +63,58 @@ interface IGraphsQueryResults {
 export async function routes(fastify: FastifyInstance, options: any) {
     fastify.get<{
         Querystring: IGraphsQueryArgs
-    }>('/graphs', {
+    }>(PATH, {
         schema: {querystring: graphsQueryArgs},
+        /*
         preValidation: (request, reply, done) => {
-            done(!request.query.nb_val ? new Error("Please provide a nb_val.") : undefined)
-            done(!request.query.invariant ? new Error("Please provide an invariant.") : undefined)
-            fastify.log.debug(request.query.invariant_values)
+            done(request.query.invariants.length != request.query.invariant_values.length
+                ? new Error("invariants and invariant_values must be the same size.") : undefined)
             done(!ACCEPTABLE_INVARIANTS.includes(request.query.invariant)
                 ? new Error("Please provide an invariant in " + ACCEPTABLE_INVARIANTS.join(", ") + ".")
                 : undefined) // only accept valid invariants
-        }
+        }*/
     }, async (request, reply) => {
 
-        const query_params = [request.query.nb_val]
+        const query_params = [request.query.max_graph_size]
 
-        let raw_query = get_default_query("graphs-json-transpose-1")
-        let cnt = 2
-        if (request.query.m) {
-            raw_query += `AND m.val = $${cnt++}\n`
-            query_params.push(request.query.m)
-        }
-        if (request.query.invariant_value) {
-            raw_query += `AND invariant.val = $${cnt++}\n`
-            query_params.push(request.query.invariant_value)
-        }
-        if (request.query.chi) {
-            raw_query += `AND chi.val = $${cnt++}\n`
-            query_params.push(request.query.chi)
-        }
-        raw_query += get_default_query("graphs-json-transpose-2")
-        const query = format(raw_query, request.query.invariant)
+        fastify.log.debug(request.query.invariants)
+
+        let raw_query = part1()
+
+        request.query.invariants.forEach((invariant, index) => {
+            raw_query += `    invariant${index}.val AS ${invariant},\n`
+        })
+
+        raw_query += part2()
+
+        request.query.invariants.forEach((invariant, index) => {
+            raw_query += `    JOIN ${invariant} invariant${index} USING(signature)\n`
+        })
+
+        raw_query += part3()
+
+        // TODO WHERE invariant_values
+
+        raw_query += '    ORDER BY '
+        raw_query += request.query.invariants.join(",") // Order according to invariant order
+
+        raw_query += part4()
+
+        request.query.invariants.forEach((invariant, index) => {
+            raw_query += `    '${invariant}',array_to_json(array_agg(invariant${index}))`
+            if (index < request.query.invariants.length-1) {
+                // Add , except for the last invariant
+                raw_query += ","
+            }
+            raw_query += "\n"
+        })
+
+        raw_query += part5()
+
+        //const query = format(raw_query, ...request.query.invariants) // TODO use format instead of building by hand ?
+        const query = raw_query
+
+        fastify.log.debug("Query: " + query)
 
         await phoeg.cached_query(query, query_params, async (error, result) => {
             if (error) {
