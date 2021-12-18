@@ -7,7 +7,7 @@ abstract class Aggregator {
 }
 
 
-export class NullAggregator extends Aggregator {
+export class IdentityAggregator extends Aggregator {
 
     aggregate(data: IPointsQueryResults): IPointsQueryResults {
         return data;

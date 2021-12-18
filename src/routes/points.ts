@@ -1,10 +1,10 @@
 import {FastifyInstance} from "fastify";
-import phoeg from "../../db/phoeg";
-import {get_default_query} from "../../queries/DefaultQueries";
+import phoeg from "../db/phoeg";
+import {get_default_query} from "../queries/DefaultQueries";
 import format from "pg-format";
 import {Static, Type} from "@sinclair/typebox";
-import {IdentityAggregator} from "../../db/aggregator";
-import {IdentityFilter} from "../../db/filter";
+import {IdentityAggregator} from "../db/aggregator";
+import {IdentityFilter} from "../db/filter";
 
 export const pointsQueryArgs = Type.Object({
     nb_val: Type.Number(),
@@ -29,7 +29,7 @@ const filter = new IdentityFilter()
  * @param fastify
  * @param options
  */
-export default async function routes(fastify: FastifyInstance, options: any) {
+export async function routes(fastify: FastifyInstance, options: any) {
     fastify.get<{
         Querystring: IPointsQueryArgs
     }>('/points', {

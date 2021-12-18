@@ -1,6 +1,6 @@
 import {FastifyInstance} from "fastify";
-import phoeg from "../../db/phoeg";
-import {get_default_query} from "../../queries/DefaultQueries";
+import phoeg from "../db/phoeg";
+import {get_default_query} from "../queries/DefaultQueries";
 import {Static, Type} from "@sinclair/typebox";
 import format from "pg-format";
 
@@ -17,7 +17,7 @@ export type IPolytopQueryArgs = Static<typeof polytopQueryArgs>;
  * @param fastify
  * @param options
  */
-export default async function routes(fastify: FastifyInstance, options: any) {
+export async function routes(fastify: FastifyInstance, options: any) {
     fastify.get<{
         Querystring: IPolytopQueryArgs
     }>('/polytop', {

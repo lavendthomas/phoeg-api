@@ -1,7 +1,7 @@
 import {FastifyInstance} from "fastify";
-import phoeg from "../../db/phoeg";
+import phoeg from "../db/phoeg";
 import format from "pg-format";
-import {get_default_query} from "../../queries/DefaultQueries";
+import {get_default_query} from "../queries/DefaultQueries";
 import {Static, Type} from '@sinclair/typebox';
 
 const ACCEPTABLE_INVARIANTS = ["av_col", "num_col"]
@@ -17,7 +17,11 @@ export const graphsQueryArgs = Type.Object({
     invariant_value: Type.Optional(Type.Number(
         {default: 0, minimum: 0, description: "Value of the selected invariant."})),
     chi: Type.Optional(Type.Number(
-        {default: 0, minimum: 0, description: "Value of chi"}))
+        {default: 0, minimum: 0, description: "Value of chi"})),
+    invariants: Type.Array(Type.Union(ACCEPTABLE_INVARIANTS.map(i => Type.Literal(i))),
+        {minItems: 2}),
+    invariant_values: Type.Array(Type.Number(),
+        {minItems: 2})
 })
 
 export type IGraphsQueryArgs = Static<typeof graphsQueryArgs>;
@@ -36,7 +40,7 @@ interface IGraphsQueryResults {
  * @param fastify
  * @param options
  */
-export default async function routes(fastify: FastifyInstance, options: any) {
+export async function routes(fastify: FastifyInstance, options: any) {
     fastify.get<{
         Querystring: IGraphsQueryArgs
     }>('/graphs', {
@@ -44,7 +48,7 @@ export default async function routes(fastify: FastifyInstance, options: any) {
         preValidation: (request, reply, done) => {
             done(!request.query.nb_val ? new Error("Please provide a nb_val.") : undefined)
             done(!request.query.invariant ? new Error("Please provide an invariant.") : undefined)
-
+            fastify.log.debug(request.query.invariant_values)
             done(!ACCEPTABLE_INVARIANTS.includes(request.query.invariant)
                 ? new Error("Please provide an invariant in " + ACCEPTABLE_INVARIANTS.join(", ") + ".")
                 : undefined) // only accept valid invariants

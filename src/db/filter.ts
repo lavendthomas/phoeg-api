@@ -6,7 +6,7 @@ abstract class Filter {
 
 }
 
-export class NullFilter extends Filter {
+export class IdentityFilter extends Filter {
 
     filter(data: IPointsQueryResults): IPointsQueryResults {
         return data;
