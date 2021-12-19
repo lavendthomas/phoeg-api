@@ -1,11 +1,16 @@
 import {FastifyInstance} from "fastify";
 import phoeg from "../db/phoeg";
-import format from "pg-format";
 import {Static, StaticArray, TLiteral, TUnion, Type} from '@sinclair/typebox';
 
 const PATH = "/graphs"
 
-const ACCEPTABLE_INVARIANTS = ["av_col", "num_col"]
+const ACCEPTABLE_INVARIANTS = ["av_col", "num_col"] as const
+type Invariant = typeof ACCEPTABLE_INVARIANTS[number]
+
+type InvariantValues = {
+    [inv in Invariant]?: number
+}
+
 const ACCEPTABLE_NB_VAL = Array.from(Array(10).keys())
 
 export const graphsQueryArgs = Type.Object({
@@ -13,11 +18,9 @@ export const graphsQueryArgs = Type.Object({
         {default: 1, description: "Maximum size of the graphs."}),
     invariants: Type.Array(Type.Union(ACCEPTABLE_INVARIANTS.map(i => Type.Literal(i))),
         {minItems: 2, description: "Name of each invariant to analyse. The first two will be used on the axis."}),
+    //[inv in Invariant]?: Type.Optional(Type.Number())
 })
 
-/*
- * Add ad
- */
 ACCEPTABLE_INVARIANTS.forEach((invariant) => {
     // @ts-ignore
     graphsQueryArgs.properties[invariant] = Type.Optional(Type.Number(
@@ -61,20 +64,26 @@ function part5(): string {
 FROM data;`
 }
 
-function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>): string {
+function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, values: InvariantValues): string {
     let raw_query = part1()
 
     invariants.forEach((invariant, index) => {
-        raw_query += `    invariant${index}.val AS ${invariant},\n`
+        raw_query += `    ${invariant}.val AS ${invariant},\n`
     })
 
     raw_query += part2()
 
     invariants.forEach((invariant, index) => {
-        raw_query += `    JOIN ${invariant} invariant${index} USING(signature)\n`
+        raw_query += `    JOIN ${invariant} ${invariant} USING(signature)\n`
     })
 
     raw_query += part3()
+
+    Object.keys(values).forEach(key => {
+        console.log(key)
+        // @ts-ignore
+        raw_query += `    AND ${key}.val = ${values[key]}\n`
+    })
 
     // TODO WHERE invariant_values
 
@@ -84,7 +93,7 @@ function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>):
     raw_query += part4()
 
     invariants.forEach((invariant, index) => {
-        raw_query += `    '${invariant}',array_to_json(array_agg(invariant${index}))`
+        raw_query += `    '${invariant}',array_to_json(array_agg(${invariant}))`
         if (index < invariants.length-1) {
             // Add , except for the last invariant
             raw_query += ","
@@ -119,10 +128,23 @@ export async function routes(fastify: FastifyInstance, options: any) {
 
         const query_params = [request.query.max_graph_size]
 
-        fastify.log.debug(request.query.invariants)
+        fastify.log.debug(request.query)
+
+        const fixed_arguments: InvariantValues = {}
+        ACCEPTABLE_INVARIANTS.forEach((invariant) => {
+            // @ts-ignore
+            if (request.query[invariant]) {
+                // @ts-ignore
+                fixed_arguments[invariant] = request.query[invariant]
+            }
+        })
+
+
+        console.debug(fixed_arguments)
+
 
         //const query = format(raw_query, ...request.query.invariants) // TODO use format instead of building by hand ?
-        const query = build_graph_query(request.query.invariants)
+        const query = build_graph_query(request.query.invariants, fixed_arguments)
 
         console.debug("Query: " + query)
 
