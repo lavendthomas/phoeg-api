@@ -6,10 +6,7 @@ import fastifySwagger from "fastify-swagger";
 import {API_PATH, API_PORT, SERVER_ADDRESS} from "./.env";
 
 import {routes as endpointRoutes} from "./routes/endpoints"
-import {routes as polytopRoutes} from "./routes/polytop"
-import {routes as pointsRoutes} from "./routes/points"
 import {routes as graphsRoutes} from "./routes/graphs"
-import {routes as extremalsRoutes} from "./routes/extremals"
 
 const server = fastify({
     logger: {level: 'debug'},
@@ -75,10 +72,7 @@ server.register(
 )
 
 server.register(endpointRoutes)
-server.register(polytopRoutes)
-server.register(pointsRoutes)
 server.register(graphsRoutes)
-server.register(extremalsRoutes)
 
 
 server.listen(API_PORT, (err, address) => {
