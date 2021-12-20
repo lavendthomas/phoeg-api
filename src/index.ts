@@ -72,7 +72,7 @@ server.register(
 )
 
 server.register(endpointRoutes)
-server.register(graphsRoutes)
+server.register(graphsRoutes, {prefix: "/graphs"})
 
 
 server.listen(API_PORT, (err, address) => {

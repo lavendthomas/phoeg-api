@@ -4,7 +4,7 @@ import {Static, StaticArray, TLiteral, TUnion, Type} from '@sinclair/typebox';
 
 const PATH = "/graphs"
 
-const ACCEPTABLE_INVARIANTS = ["av_col", "num_col"] as const
+const ACCEPTABLE_INVARIANTS = ["av_col", "num_col", "num_edges"] as const
 type Invariant = typeof ACCEPTABLE_INVARIANTS[number]
 
 type InvariantValues = {
@@ -44,6 +44,17 @@ SELECT
     n.signature AS sig,\n`
 }
 
+function part1_points(): string {
+    return `WITH data AS (
+SELECT
+    COUNT(*) as mult\n`
+}
+
+function part1_polytope(): string {
+    return `WITH data AS (
+SELECT\n`
+}
+
 function part2(): string {
     return `    FROM num_vertices n\n`
 }
@@ -64,6 +75,11 @@ function part5(): string {
 FROM data;`
 }
 
+function part5_polytope(invariants: string[]): string {
+    return `)
+SELECT ST_AsText(ST_ConvexHull(ST_Collect(ST_Point(${invariants.join(",")})))) FROM data;`
+}
+
 function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, values: InvariantValues): string {
     let raw_query = part1()
 
@@ -79,13 +95,8 @@ function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, 
 
     raw_query += part3()
 
-    Object.keys(values).forEach(key => {
-        console.log(key)
-        // @ts-ignore
-        raw_query += `    AND ${key}.val = ${values[key]}\n`
-    })
-
-    // TODO WHERE invariant_values
+    raw_query += '    GROUP BY'
+    raw_query += invariants.join(", ")
 
     raw_query += '    ORDER BY '
     raw_query += invariants.join(", ") // Order according to invariant order
@@ -105,6 +116,77 @@ function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, 
     return raw_query
 }
 
+function build_points_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, values: InvariantValues): string {
+    let raw_query = part1_points()
+
+    invariants.forEach((invariant, index) => {
+        raw_query += `    ${invariant}.val AS ${invariant},\n`
+    })
+
+    raw_query += part2()
+
+    invariants.forEach((invariant, index) => {
+        raw_query += `    JOIN ${invariant} ${invariant} USING(signature)\n`
+    })
+
+    raw_query += part3()
+
+    raw_query += '    ORDER BY '
+    raw_query += invariants.join(", ") // Order according to invariant order
+
+    raw_query += part4()
+
+    invariants.concat(["mult"]).forEach((invariant, index) => {
+        raw_query += `    '${invariant}',array_to_json(array_agg(${invariant}))`
+        if (index < invariants.length-1) {
+            // Add , except for the last invariant
+            raw_query += ","
+        }
+        raw_query += "\n"
+    })
+
+    raw_query += part5()
+    return raw_query
+}
+
+function build_polytope_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, values: InvariantValues): string {
+    let raw_query = part1_polytope()
+
+    invariants.forEach((invariant, index) => {
+        raw_query += `    ${invariant}.val AS ${invariant},\n`
+    })
+
+    raw_query += part2()
+
+    invariants.forEach((invariant, index) => {
+        raw_query += `    JOIN ${invariant} ${invariant} USING(signature)\n`
+    })
+
+    raw_query += part3()
+
+    raw_query += '    GROUP BY '
+    raw_query += invariants.join(", ") // Order according to invariant order
+    raw_query += '\n'
+
+
+    raw_query += '    ORDER BY '
+    raw_query += invariants.join(", ") // Order according to invariant order
+
+    raw_query += part4()
+
+    invariants.concat(["mult"]).forEach((invariant, index) => {
+        raw_query += `    '${invariant}',array_to_json(array_agg(${invariant}))`
+        if (index < invariants.length-1) {
+            // Add , except for the last invariant
+            raw_query += ","
+        }
+        raw_query += "\n"
+    })
+
+    raw_query += part5_polytope(invariants)
+    return raw_query
+}
+
 /**
  * Execute a request to the phoeg database
  * WARNING: unsafe
@@ -114,7 +196,7 @@ function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, 
 export async function routes(fastify: FastifyInstance, options: any) {
     fastify.get<{
         Querystring: IGraphsQueryArgs
-    }>(PATH, {
+    }>("/", {
         schema: {querystring: graphsQueryArgs},
         /*
         preValidation: (request, reply, done) => {
@@ -140,9 +222,6 @@ export async function routes(fastify: FastifyInstance, options: any) {
         })
 
 
-        console.debug(fixed_arguments)
-
-
         //const query = format(raw_query, ...request.query.invariants) // TODO use format instead of building by hand ?
         const query = build_graph_query(request.query.invariants, fixed_arguments)
 
@@ -153,7 +232,54 @@ export async function routes(fastify: FastifyInstance, options: any) {
                 fastify.log.error(error)
                 reply.code(400).send({})
             } else {
-                //fastify.log.info(result)
+                const results: IGraphsQueryResults = result.rows[0].json_build_object
+                reply.send(results)
+            }
+        })
+    })
+
+
+
+    fastify.get<{
+        Querystring: IGraphsQueryArgs
+    }>("/points", {
+        schema: {querystring: graphsQueryArgs}
+    }, async (request, reply) => {
+        const query_params = [request.query.max_graph_size]
+
+        const query = build_points_query(request.query.invariants, {})
+
+        console.debug("Query: " + query)
+
+        await phoeg.cached_query(query, query_params, async (error, result) => {
+            if (error) {
+                fastify.log.error(error)
+                reply.code(400).send({})
+            } else {
+                const results: IGraphsQueryResults = result.rows[0].json_build_object
+                reply.send(results)
+            }
+        })
+
+    })
+
+
+    fastify.get<{
+        Querystring: IGraphsQueryArgs
+    }>("/polytope", {
+        schema: {querystring: graphsQueryArgs}
+    }, async (request, reply) => {
+        const query_params = [request.query.max_graph_size]
+
+        const query = build_polytope_query(request.query.invariants, {})
+
+        console.debug("Query: " + query)
+
+        await phoeg.cached_query(query, query_params, async (error, result) => {
+            if (error) {
+                fastify.log.error(error)
+                reply.code(400).send({})
+            } else {
                 const results: IGraphsQueryResults = result.rows[0].json_build_object
                 reply.send(results)
             }
