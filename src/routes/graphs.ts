@@ -1,8 +1,6 @@
 import {FastifyInstance} from "fastify";
 import phoeg from "../db/phoeg";
-import {Static, StaticArray, TLiteral, TUnion, Type} from '@sinclair/typebox';
-
-const PATH = "/graphs"
+import {Static, StaticArray, TLiteral, TUnion, Type, TypeBuilder} from '@sinclair/typebox';
 
 const ACCEPTABLE_INVARIANTS = ["av_col", "num_col", "num_edges"] as const
 type Invariant = typeof ACCEPTABLE_INVARIANTS[number]
@@ -11,19 +9,25 @@ type InvariantValues = {
     [inv in Invariant]?: number
 }
 
+
 const ACCEPTABLE_NB_VAL = Array.from(Array(10).keys())
 
+export const phoegDefinitions = Type.Namespace({
+    invariant: Type.Union(ACCEPTABLE_INVARIANTS.map(i => Type.Literal(i)))
+}, {$id: 'Phoeg'})
+
 export const graphsQueryArgs = Type.Object({
-    max_graph_size: Type.Union(ACCEPTABLE_NB_VAL.map(nb => Type.Literal(nb)),
-        {default: 1, description: "Maximum size of the graphs."}),
-    invariants: Type.Array(Type.Union(ACCEPTABLE_INVARIANTS.map(i => Type.Literal(i))),
-        {minItems: 2, description: "Name of each invariant to analyse. The first two will be used on the axis."}),
-    //[inv in Invariant]?: Type.Optional(Type.Number())
+    max_graph_size: Type.Integer({
+        minimum: 1, maximum: 10, default: 8,
+        description: "Maximum size of the graphs."}),
+    invariants: Type.Array(Type.String({pattern: ACCEPTABLE_INVARIANTS.join("|"), examples: ACCEPTABLE_INVARIANTS, default: ACCEPTABLE_INVARIANTS[0]}),
+    {minItems: 2, description: "Name of each invariant to analyse. The first two will be used on the axis. Acceptable values are: " + ACCEPTABLE_INVARIANTS.join(", ") + "."}),
+
 })
 
 ACCEPTABLE_INVARIANTS.forEach((invariant) => {
     // @ts-ignore
-    graphsQueryArgs.properties[invariant] = Type.Optional(Type.Number(
+    graphsQueryArgs.properties[invariant] = Type.Optional(Type.Integer(
         {description: `Fixed value for the invariant ${invariant}.`}))
 })
 
@@ -84,7 +88,11 @@ function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, 
     let raw_query = part1()
 
     invariants.forEach((invariant, index) => {
-        raw_query += `    ${invariant}.val AS ${invariant},\n`
+        raw_query += `    ${invariant}.val AS ${invariant}`
+        if (index < invariants.length-1) {
+            raw_query += ","
+        }
+        raw_query += "\n"
     })
 
     raw_query += part2()
@@ -94,9 +102,6 @@ function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, 
     })
 
     raw_query += part3()
-
-    raw_query += '    GROUP BY'
-    raw_query += invariants.join(", ")
 
     raw_query += '    ORDER BY '
     raw_query += invariants.join(", ") // Order according to invariant order
@@ -120,7 +125,11 @@ function build_points_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>,
     let raw_query = part1_points()
 
     invariants.forEach((invariant, index) => {
-        raw_query += `    ${invariant}.val AS ${invariant},\n`
+        raw_query += `    ${invariant}.val AS ${invariant}`
+        if (index < invariants.length-1) {
+            raw_query += ","
+        }
+        raw_query += "\n"
     })
 
     raw_query += part2()
@@ -194,6 +203,7 @@ function build_polytope_query(invariants: StaticArray<TUnion<TLiteral<string>[]>
  * @param options
  */
 export async function routes(fastify: FastifyInstance, options: any) {
+    fastify.addSchema(phoegDefinitions)
     fastify.get<{
         Querystring: IGraphsQueryArgs
     }>("/", {
