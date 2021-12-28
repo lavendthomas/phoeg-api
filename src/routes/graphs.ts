@@ -2,7 +2,7 @@ import {FastifyInstance} from "fastify";
 import phoeg from "../db/phoeg";
 import {Static, StaticArray, TLiteral, TUnion, Type, TypeBuilder} from '@sinclair/typebox';
 
-const ACCEPTABLE_INVARIANTS = ["av_col", "num_col", "num_edges"] as const
+const ACCEPTABLE_INVARIANTS = ["av_col", "num_col", "num_edges", "chromatic_number"] as const
 type Invariant = typeof ACCEPTABLE_INVARIANTS[number]
 
 type InvariantValues = {
@@ -51,7 +51,7 @@ SELECT
 function part1_points(): string {
     return `WITH data AS (
 SELECT
-    COUNT(*) as mult\n`
+    COUNT(*) as mult,\n`
 }
 
 function part1_polytope(): string {
@@ -72,6 +72,58 @@ function part4(): string {
 )
 SELECT json_build_object(
     'sig',array_to_json(array_agg(sig)),\n`
+}
+
+function part4_points(): string {
+    return `
+)
+SELECT json_build_object(\n`
+}
+
+function part4_polytope(invariant1: string, invariant2: string): string {
+    return `
+),
+polytable as (
+    -- Build the convex hull and output it as json
+    SELECT st_asgeojson(ST_ConvexHull(ST_Collect(ST_Point(${invariant1}, ${invariant2})))) as poly
+    FROM data
+),
+points as (
+    -- We split the list of points of the convex hull as a table with a row per
+    -- point of the convex hull. The function json_array_elements splits a json
+    -- array into rows.
+    select poly::json->'type' as tp, json_array_elements(
+        -- Since the arrays are different based on the type of convex hull
+        -- (point, line or polygon), we format it so we have an array of points
+        -- (which are also arrays)
+        -- thing::json->'key' casts 'thing' into json and extracts the value
+        -- for the key. Also works on arrays with indices.
+        case (poly::json->'type')::text
+            -- If we have a point, make it an array containing a single point.
+        when '"Point"' then json_build_array(poly::json->'coordinates')
+            -- A line is already an array of points.
+        when '"LineString"' then poly::json->'coordinates'
+            -- A polygon is an array containing an array of points so we
+            -- extract this array.
+        when '"Polygon"' then (poly::json->'coordinates')::json->0
+        end
+    ) as xy
+    from polytable
+),
+formatted as (
+    -- Format each row as a json dict with keys x and y
+    select tp::text as tp, json_build_object('x', xy::json->0, 'y', xy::json->1) as xy
+    from points
+)
+select json_build_object('type', tp::json, 'coordinates', (
+        case tp::text
+        when '"Point"' then json_agg(xy)->0
+        else json_agg(xy)
+        end
+    ))
+from formatted
+group by tp;
+`
 }
 
 function part5(): string {
@@ -140,14 +192,18 @@ function build_points_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>,
 
     raw_query += part3()
 
+    raw_query += '    GROUP BY '
+    raw_query += invariants.join(", ") // Order according to invariant order
+    raw_query += "\n"
+
     raw_query += '    ORDER BY '
     raw_query += invariants.join(", ") // Order according to invariant order
 
-    raw_query += part4()
+    raw_query += part4_points()
 
     invariants.concat(["mult"]).forEach((invariant, index) => {
         raw_query += `    '${invariant}',array_to_json(array_agg(${invariant}))`
-        if (index < invariants.length-1) {
+        if (index < invariants.length) {
             // Add , except for the last invariant
             raw_query += ","
         }
@@ -162,7 +218,11 @@ function build_polytope_query(invariants: StaticArray<TUnion<TLiteral<string>[]>
     let raw_query = part1_polytope()
 
     invariants.forEach((invariant, index) => {
-        raw_query += `    ${invariant}.val AS ${invariant},\n`
+        raw_query += `    ${invariant}.val AS ${invariant}`
+        if (index < invariants.length-1) {
+            raw_query += ","
+        }
+        raw_query += "\n"
     })
 
     raw_query += part2()
@@ -181,6 +241,8 @@ function build_polytope_query(invariants: StaticArray<TUnion<TLiteral<string>[]>
     raw_query += '    ORDER BY '
     raw_query += invariants.join(", ") // Order according to invariant order
 
+    raw_query += part4_polytope(invariants[0], invariants[1])
+    /*
     raw_query += part4()
 
     invariants.concat(["mult"]).forEach((invariant, index) => {
@@ -191,8 +253,9 @@ function build_polytope_query(invariants: StaticArray<TUnion<TLiteral<string>[]>
         }
         raw_query += "\n"
     })
+    */
 
-    raw_query += part5_polytope(invariants)
+    // raw_query += part5_polytope(invariants)
     return raw_query
 }
 
@@ -291,6 +354,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
                 reply.code(400).send({})
             } else {
                 const results: IGraphsQueryResults = result.rows[0].json_build_object
+                console.debug(results)
                 reply.send(results)
             }
         })
