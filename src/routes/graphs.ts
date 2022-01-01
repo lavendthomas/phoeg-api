@@ -1,6 +1,7 @@
 import {FastifyInstance} from "fastify";
 import phoeg from "../db/phoeg";
 import {Static, StaticArray, TLiteral, TUnion, Type, TypeBuilder} from '@sinclair/typebox';
+import {type} from "os";
 
 const ACCEPTABLE_INVARIANTS = ["av_col", "num_col", "num_edges", "chromatic_number"] as const
 type Invariant = typeof ACCEPTABLE_INVARIANTS[number]
@@ -27,7 +28,7 @@ export const graphsQueryArgs = Type.Object({
 
 ACCEPTABLE_INVARIANTS.forEach((invariant) => {
     // @ts-ignore
-    graphsQueryArgs.properties[invariant] = Type.Optional(Type.Integer(
+    graphsQueryArgs.properties[invariant] = Type.Optional(Type.Number(
         {description: `Fixed value for the invariant ${invariant}.`}))
 })
 
@@ -154,6 +155,18 @@ function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, 
     })
 
     raw_query += part3()
+
+    // Filter
+    console.log(values)
+    ACCEPTABLE_INVARIANTS.forEach((invariant) => {
+        if (!values[invariant]) { // Why ! ?
+            if (Number.isInteger(values[invariant]))
+                raw_query += `    AND ${invariant}.val = ${values[invariant]}\n`
+            } else { // Is a number but not an integer -> float
+                raw_query += `    AND ABS(${invariant}.val - ${values[invariant]}) < 0.00001\n`
+        }
+    })
+
 
     raw_query += '    ORDER BY '
     raw_query += invariants.join(", ") // Order according to invariant order
