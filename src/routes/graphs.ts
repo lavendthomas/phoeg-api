@@ -159,11 +159,12 @@ function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, 
     // Filter
     console.log(values)
     ACCEPTABLE_INVARIANTS.forEach((invariant) => {
-        if (!values[invariant]) { // Why ! ?
-            if (Number.isInteger(values[invariant]))
+        if (values[invariant]) { // Why ! ?
+            if (Number.isInteger(values[invariant])) {
                 raw_query += `    AND ${invariant}.val = ${values[invariant]}\n`
             } else { // Is a number but not an integer -> float
                 raw_query += `    AND ABS(${invariant}.val - ${values[invariant]}) < 0.00001\n`
+            }
         }
     })
 
