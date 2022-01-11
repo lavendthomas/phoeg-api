@@ -3,6 +3,8 @@ import fastify_compress from "fastify-compress";
 import fastifyCors from "fastify-cors";
 import fastifySwagger from "fastify-swagger";
 
+import {parse} from 'qs';
+
 import {API_PATH, API_PORT, SERVER_ADDRESS} from "./.env";
 
 import {routes as endpointRoutes} from "./routes/endpoints"
@@ -14,7 +16,8 @@ const server = fastify({
         customOptions: {
             coerceTypes: 'array'        // Accept arrays in querystrings
         }
-    }
+    },
+    querystringParser: str => parse(str)
 })
 
 /*

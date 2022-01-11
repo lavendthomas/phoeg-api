@@ -1,8 +1,6 @@
 import {FastifyInstance} from "fastify";
 
 import {graphsQueryArgs, phoegDefinitions} from "./graphs"
-import {pointsQueryArgs} from "./points"
-
 
 export async function routes(fastify: FastifyInstance, options: any) {
     fastify.get('/endpoints', async (request, reply) => {
@@ -15,12 +13,6 @@ export async function routes(fastify: FastifyInstance, options: any) {
                     definitions: phoegDefinitions,
                     params: graphsQueryArgs
                 },
-                {
-                    name: 'Points',
-                    description: '',
-                    path: '/points',
-                    params: pointsQueryArgs
-                }
             ]
         })
     })

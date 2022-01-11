@@ -1,10 +1,68 @@
 import {FastifyInstance} from "fastify";
 import phoeg from "../db/phoeg";
-import {Static, StaticArray, TLiteral, TUnion, Type, TypeBuilder} from '@sinclair/typebox';
-import {type} from "os";
+import {Static, StaticArray, TLiteral, TUnion, Type} from '@sinclair/typebox';
+import {get_default_query} from "../queries/DefaultQueries";
 
-const ACCEPTABLE_INVARIANTS = ["av_col", "num_col", "num_edges", "chromatic_number"] as const
+const ACCEPTABLE_INVARIANTS = [
+    'chromatic_number',
+    'is_planar',
+    'fib',
+    'num_col',
+    'diam',
+    'semi_total_dom_num',
+    'num_pending',
+    'min_vertex_cover',
+    'fib_alt',
+    'average_distance',
+    'max_deg',
+    'cubic',
+    'is_connected',
+    'clique_max',
+    'not_fulljoin',
+    'clawfree',
+    'generators',
+    'total_eccentricity',
+    'connected',
+    'conn_clawfree',
+    'total_dom_num',
+    'conn_4regular',
+    'num_vertices',
+    'min_deg',
+    'conn_5regular_14',
+    'max_indep_set',
+    'num_edges',
+    'totavmat',
+    'wiener_index',
+    'irregularity',
+    'raster_overviews',
+    'eci',
+    'dnm',
+    'geography_columns',
+    'rapavmaxmat',
+    'graphs',
+    'dom_num',
+    'eccentric_connectivity_index',
+    'spatial_ref_sys',
+    'geometry_columns',
+    'sum_blocks',
+    'num_deg_nm1',
+    'raster_columns',
+    'is_tree',
+    'max_huv',
+    'conn_mindeg3_maxdeg5',
+    'av_col',
+    'conn_min_deg3_max_deg4',
+    'radius'
+]
+
 type Invariant = typeof ACCEPTABLE_INVARIANTS[number]
+
+/*
+await phoeg.cached_query(get_default_query("list_tables"), [], (err, res) => {
+    if (err) console.error("Unable to query invariants from database")
+    res.rows.forEach(inv => ACCEPTABLE_INVARIANTS.push(inv.table_name))
+})
+*/
 
 type InvariantValues = {
     [inv in Invariant]?: number
@@ -21,15 +79,15 @@ export const graphsQueryArgs = Type.Object({
     max_graph_size: Type.Integer({
         minimum: 1, maximum: 10, default: 8,
         description: "Maximum size of the graphs."}),
-    invariants: Type.Array(Type.String({pattern: ACCEPTABLE_INVARIANTS.join("|"), examples: ACCEPTABLE_INVARIANTS, default: ACCEPTABLE_INVARIANTS[0]}),
-    {minItems: 2, description: "Name of each invariant to analyse. The first two will be used on the axis. Acceptable values are: " + ACCEPTABLE_INVARIANTS.join(", ") + "."}),
-
-})
-
-ACCEPTABLE_INVARIANTS.forEach((invariant) => {
-    // @ts-ignore
-    graphsQueryArgs.properties[invariant] = Type.Optional(Type.Number(
-        {description: `Fixed value for the invariant ${invariant}.`}))
+    invariants: Type.Array(Type.Object({
+        name: Type.String({
+            pattern: ACCEPTABLE_INVARIANTS.join("|"),
+            examples: ACCEPTABLE_INVARIANTS,
+            default: ACCEPTABLE_INVARIANTS[0],
+            title: "Invariant Name"
+        }),
+        value: Type.Optional(Type.Number({title: "Optional value"}))
+    }), {minItems: 2, description: "Name of each invariant to analyse. The first two will be used on the axis. Acceptable values are: " + ACCEPTABLE_INVARIANTS.join(", ") + "."}),
 })
 
 export type IGraphsQueryArgs = Static<typeof graphsQueryArgs>;
@@ -159,7 +217,7 @@ function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, 
     // Filter
     console.log(values)
     ACCEPTABLE_INVARIANTS.forEach((invariant) => {
-        if (values[invariant]) { // Why ! ?
+        if (values[invariant]) {
             if (Number.isInteger(values[invariant])) {
                 raw_query += `    AND ${invariant}.val = ${values[invariant]}\n`
             } else { // Is a number but not an integer -> float
@@ -310,7 +368,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
 
 
         //const query = format(raw_query, ...request.query.invariants) // TODO use format instead of building by hand ?
-        const query = build_graph_query(request.query.invariants, fixed_arguments)
+        const query = build_graph_query(request.query.invariants.map((e) => e.name), fixed_arguments)
 
         console.debug("Query: " + query)
 
@@ -334,7 +392,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
     }, async (request, reply) => {
         const query_params = [request.query.max_graph_size]
 
-        const query = build_points_query(request.query.invariants, {})
+        const query = build_points_query(request.query.invariants.map(e => e.name), {})
 
         console.debug("Query: " + query)
 
@@ -358,7 +416,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
     }, async (request, reply) => {
         const query_params = [request.query.max_graph_size]
 
-        const query = build_polytope_query(request.query.invariants, {})
+        const query = build_polytope_query(request.query.invariants.map(e => e.name), {})
 
         console.debug("Query: " + query)
 
