@@ -343,14 +343,6 @@ export async function routes(fastify: FastifyInstance, options: any) {
         Querystring: IGraphsQueryArgs
     }>("/", {
         schema: {querystring: graphsQueryArgs},
-        /*
-        preValidation: (request, reply, done) => {
-            done(request.query.invariants.length != request.query.invariant_values.length
-                ? new Error("invariants and invariant_values must be the same size.") : undefined)
-            done(!ACCEPTABLE_INVARIANTS.includes(request.query.invariant)
-                ? new Error("Please provide an invariant in " + ACCEPTABLE_INVARIANTS.join(", ") + ".")
-                : undefined) // only accept valid invariants
-        }*/
     }, async (request, reply) => {
 
         const query_params = [request.query.max_graph_size]
