@@ -1,7 +1,7 @@
 import {FastifyInstance} from "fastify";
 import phoeg from "../db/phoeg";
 import {Static, StaticArray, TLiteral, TUnion, Type} from '@sinclair/typebox';
-import {get_default_query} from "../queries/DefaultQueries";
+import {isUndefined} from "util";
 
 const ACCEPTABLE_INVARIANTS = [
     'chromatic_number',
@@ -64,9 +64,13 @@ await phoeg.cached_query(get_default_query("list_tables"), [], (err, res) => {
 })
 */
 
-type InvariantValues = {
-    [inv in Invariant]?: number
+type InvariantBounds = {
+    [inv in Invariant]?: {
+        minimum?: number,
+        maximum?: number,
+    }
 }
+
 
 
 const ACCEPTABLE_NB_VAL = Array.from(Array(10).keys())
@@ -86,7 +90,8 @@ export const graphsQueryArgs = Type.Object({
             default: ACCEPTABLE_INVARIANTS[0],
             title: "Invariant Name"
         }),
-        value: Type.Optional(Type.Number({title: "Optional value"}))
+        minimum_bound: Type.Optional(Type.Number({title: "Minimum Bound"})),
+        maximum_bound: Type.Optional(Type.Number({title: "Maximum Bound"})),
     }), {minItems: 2, description: "Name of each invariant to analyse. The first two will be used on the axis. Acceptable values are: " + ACCEPTABLE_INVARIANTS.join(", ") + "."}),
 })
 
@@ -195,7 +200,7 @@ function part5_polytope(invariants: string[]): string {
 SELECT ST_AsText(ST_ConvexHull(ST_Collect(ST_Point(${invariants.join(",")})))) FROM data;`
 }
 
-function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, values: InvariantValues): string {
+function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, values: InvariantBounds): string {
     let raw_query = part1()
 
     invariants.forEach((invariant, index) => {
@@ -206,7 +211,7 @@ function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, 
         raw_query += "\n"
     })
 
-    raw_query += part2()
+    raw_query += `    FROM num_vertices n\n`
 
     invariants.forEach((invariant, index) => {
         raw_query += `    JOIN ${invariant} ${invariant} USING(signature)\n`
@@ -245,7 +250,7 @@ function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, 
     return raw_query
 }
 
-function build_points_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, values: InvariantValues): string {
+function build_points_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, bounds: any): string {
     let raw_query = part1_points()
 
     invariants.forEach((invariant, index) => {
@@ -263,6 +268,16 @@ function build_points_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>,
     })
 
     raw_query += part3()
+
+    // Filter
+    bounds.forEach((bound: any) => {
+        if (bound.minimum_bound) {
+            raw_query += `    AND ${bound.name}.val >= ${bound.minimum_bound}\n`
+        }
+        if (bound.maximum_bound) {
+            raw_query += `    AND ${bound.name}.val <= ${bound.maximum_bound}\n`
+        }
+    })
 
     raw_query += '    GROUP BY '
     raw_query += invariants.join(", ") // Order according to invariant order
@@ -286,7 +301,7 @@ function build_points_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>,
     return raw_query
 }
 
-function build_polytope_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, values: InvariantValues): string {
+function build_polytope_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, values: InvariantBounds): string {
     let raw_query = part1_polytope()
 
     invariants.forEach((invariant, index) => {
@@ -349,12 +364,12 @@ export async function routes(fastify: FastifyInstance, options: any) {
 
         fastify.log.debug(request.query)
 
-        const fixed_arguments: InvariantValues = {}
+        const fixed_arguments: InvariantBounds = {}
         ACCEPTABLE_INVARIANTS.forEach((invariant) => {
             // @ts-ignore
             if (request.query[invariant]) {
                 // @ts-ignore
-                fixed_arguments[invariant] = request.query[invariant]
+                fixed_arguments[invariant] = {}
             }
         })
 
@@ -384,7 +399,19 @@ export async function routes(fastify: FastifyInstance, options: any) {
     }, async (request, reply) => {
         const query_params = [request.query.max_graph_size]
 
-        const query = build_points_query(request.query.invariants.map(e => e.name), {})
+        const invariants = request.query.invariants.map(e => e.name)
+
+        const bounds: InvariantBounds = request.query.invariants.reduce((map, obj) => {
+            // @ts-ignore
+            map[obj.name] = {
+                minimum: obj.minimum_bound,
+                maximum: obj.maximum_bound
+            };
+            return map;
+        }, {});
+
+
+        const query = build_points_query(invariants, request.query.invariants)
 
         console.debug("Query: " + query)
 
