@@ -301,7 +301,7 @@ function build_points_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>,
     return raw_query
 }
 
-function build_polytope_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, values: InvariantBounds): string {
+function build_polytope_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, bounds: any): string {
     let raw_query = part1_polytope()
 
     invariants.forEach((invariant, index) => {
@@ -319,6 +319,16 @@ function build_polytope_query(invariants: StaticArray<TUnion<TLiteral<string>[]>
     })
 
     raw_query += part3()
+
+    // Filter
+    bounds.forEach((bound: any) => {
+        if (bound.minimum_bound) {
+            raw_query += `    AND ${bound.name}.val >= ${bound.minimum_bound}\n`
+        }
+        if (bound.maximum_bound) {
+            raw_query += `    AND ${bound.name}.val <= ${bound.maximum_bound}\n`
+        }
+    })
 
     raw_query += '    GROUP BY '
     raw_query += invariants.join(", ") // Order according to invariant order
@@ -435,7 +445,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
     }, async (request, reply) => {
         const query_params = [request.query.max_graph_size]
 
-        const query = build_polytope_query(request.query.invariants.map(e => e.name), {})
+        const query = build_polytope_query(request.query.invariants.map(e => e.name), request.query.invariants)
 
         console.debug("Query: " + query)
 
