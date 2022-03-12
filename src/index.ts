@@ -32,7 +32,14 @@ server.register(
  * Allow Cross-origin resource sharing
  */
 server.register(
-    fastifyCors
+    fastifyCors, {
+        origin: "*",
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+        credentials: true,
+        preflightContinue: false,
+        optionsSuccessStatus: 204
+    }
 )
 
 /**

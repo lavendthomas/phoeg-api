@@ -1,7 +1,6 @@
 import {FastifyInstance} from "fastify";
 import phoeg from "../db/phoeg";
 import {Static, StaticArray, TLiteral, TUnion, Type} from '@sinclair/typebox';
-import {isUndefined} from "util";
 
 const ACCEPTABLE_INVARIANTS = [
     'chromatic_number',
@@ -53,7 +52,7 @@ const ACCEPTABLE_INVARIANTS = [
     'av_col',
     'conn_min_deg3_max_deg4',
     'radius'
-]
+].sort()
 
 type Invariant = typeof ACCEPTABLE_INVARIANTS[number]
 
@@ -71,13 +70,139 @@ type InvariantBounds = {
     }
 }
 
-
-
-const ACCEPTABLE_NB_VAL = Array.from(Array(10).keys())
-
+export function allInvariants(): string[] {
+    return ACCEPTABLE_INVARIANTS
+}
+/*
 export const phoegDefinitions = Type.Namespace({
     invariant: Type.Union(ACCEPTABLE_INVARIANTS.map(i => Type.Literal(i)))
 }, {$id: 'Phoeg'})
+*/
+
+
+/**
+ * Return a JSON Schema definition
+ */
+export function phoegDefinitions(): any {
+    return {
+        "definitions": {
+            "invariants": {
+                "type": "string",
+                "enum": ACCEPTABLE_INVARIANTS
+            }
+        }
+    }
+}
+
+export function graphQueryArgsFn() {
+    return {
+        "type": "object",
+        "title": "Phoeg Request",
+        "properties": {
+            "max_graph_size": {
+                "minimum": 1,
+                "maximum": 10,
+                "default": 8,
+                "title": "Maximum Graph Size",
+                "description": "This setting affects the number of nodes of the graphs that are displayed in the polytope.",
+                "type": "integer"
+            },
+            "x_invariant": {
+                "title": "Invariant on the X axis",
+                "description": "The invariant to use for the x-axis.",
+                "type": "string",
+                "enum": ACCEPTABLE_INVARIANTS,
+                "default": "av_col"
+            },
+            "y_invariant": {
+                "title": "Invariant on the Y axis",
+                "description": "The invariant to use for the y-axis.",
+                "type": "string",
+                "enum": ACCEPTABLE_INVARIANTS,
+                "default": "num_col"
+            },
+            "add_colouring": {
+                "title": "Add colouring?",
+                "description": "The invariant selected in the following box will be used to colour the points in the graph.",
+                "$ref": "#/definitions/colour"
+            },
+            "constraints": {
+                "description": "Additional constraints to apply to the query.",
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "invariant": {
+                            "description": "The invariant to use for the constraint.",
+                            "type": "string",
+                            "enum": ACCEPTABLE_INVARIANTS,
+                        },
+                        "minimum_bound": {
+                            "title": "Minimum Bound",
+                            "type": "number"
+                        },
+                        "maximum_bound": {
+                            "title": "Maximum Bound",
+                            "type": "number"
+                        }
+                    }
+                }
+            }
+        },
+        "required": ["max_graph_size", "x_invariant", "y_invariant", "add_colouring"],
+        "definitions":  {
+            "colour": {
+                "title": "colour",
+                "type": "object",
+                "properties": {
+                    "Add colouring?": {
+                        "type": "string",
+                        "enum": [
+                            "No",
+                            "Yes",
+                        ],
+                        "default": "No"
+                    }
+                },
+                "required": [
+                    "Add colouring?"
+                ],
+                "dependencies": {
+                    "Add colouring?": {
+                        "oneOf": [
+                            {
+                                "properties": {
+                                    "Add colouring?": {
+                                        "enum": [
+                                            "No"
+                                        ]
+                                    }
+                                }
+                            },
+                            {
+                                "properties": {
+                                    "Add colouring?": {
+                                        "enum": [
+                                            "Yes"
+                                        ]
+                                    },
+                                    "The invariant to use for the colouring.": {
+                                        "type": "string",
+                                        "enum": ACCEPTABLE_INVARIANTS,
+                                        "default": ACCEPTABLE_INVARIANTS[2]
+                                    }
+                                },
+                                "required": [
+                                    "How old is your pet?"
+                                ]
+                            },
+                        ]
+                    }
+                }
+            }
+        }
+    }
+}
 
 export const graphsQueryArgs = Type.Object({
     max_graph_size: Type.Integer({
@@ -363,7 +488,7 @@ function build_polytope_query(invariants: StaticArray<TUnion<TLiteral<string>[]>
  * @param options
  */
 export async function routes(fastify: FastifyInstance, options: any) {
-    fastify.addSchema(phoegDefinitions)
+    //fastify.addSchema(phoegDefinitions())
     fastify.get<{
         Querystring: IGraphsQueryArgs
     }>("/", {
