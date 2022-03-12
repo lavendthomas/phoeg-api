@@ -1,6 +1,6 @@
 import {FastifyInstance} from "fastify";
 import phoeg from "../db/phoeg";
-import {Static, StaticArray, TLiteral, TUnion, Type} from '@sinclair/typebox';
+import {Static, StaticArray, TLiteral, TNumber, TObject, TOptional, TString, TUnion, Type} from '@sinclair/typebox';
 
 const ACCEPTABLE_INVARIANTS = [
     'chromatic_number',
@@ -56,12 +56,6 @@ const ACCEPTABLE_INVARIANTS = [
 
 type Invariant = typeof ACCEPTABLE_INVARIANTS[number]
 
-/*
-await phoeg.cached_query(get_default_query("list_tables"), [], (err, res) => {
-    if (err) console.error("Unable to query invariants from database")
-    res.rows.forEach(inv => ACCEPTABLE_INVARIANTS.push(inv.table_name))
-})
-*/
 
 type InvariantBounds = {
     [inv in Invariant]?: {
@@ -73,11 +67,6 @@ type InvariantBounds = {
 export function allInvariants(): string[] {
     return ACCEPTABLE_INVARIANTS
 }
-/*
-export const phoegDefinitions = Type.Namespace({
-    invariant: Type.Union(ACCEPTABLE_INVARIANTS.map(i => Type.Literal(i)))
-}, {$id: 'Phoeg'})
-*/
 
 
 /**
@@ -193,7 +182,7 @@ export function graphQueryArgsFn() {
                                     }
                                 },
                                 "required": [
-                                    "How old is your pet?"
+                                    "The invariant to use for the colouring."
                                 ]
                             },
                         ]
@@ -204,6 +193,36 @@ export function graphQueryArgsFn() {
     }
 }
 
+export const polytopeQueryArgs = Type.Object({
+    max_graph_size: Type.Integer({
+        minimum: 1, maximum: 10, default: 8,
+        description: "Maximum size of the graphs."}),
+    x_invariant: Type.String({
+        pattern: ACCEPTABLE_INVARIANTS.join("|"),
+        examples: ACCEPTABLE_INVARIANTS,
+        title: "X Invariant Name"
+    }),
+    y_invariant: Type.String({
+        pattern: ACCEPTABLE_INVARIANTS.join("|"),
+        examples: ACCEPTABLE_INVARIANTS,
+        title: "Y Invariant Name"
+    }),
+    colour: Type.Optional(Type.String({
+        pattern: ACCEPTABLE_INVARIANTS.join("|"),
+        examples: ACCEPTABLE_INVARIANTS,
+        title: "Colour Invariant Name"
+    })),
+    constraints: Type.Optional(Type.Array(Type.Object({
+        name: Type.String({
+            pattern: ACCEPTABLE_INVARIANTS.join("|"),
+            examples: ACCEPTABLE_INVARIANTS,
+            title: "Invariant Name"
+        }),
+        minimum_bound: Type.Optional(Type.Number({title: "Minimum Bound"})),
+        maximum_bound: Type.Optional(Type.Number({title: "Maximum Bound"})),
+    }), {description: "Name of each invariant to analyse. The first two will be used on the axis. Acceptable values are: " + ACCEPTABLE_INVARIANTS.join(", ") + "."})),
+})
+
 export const graphsQueryArgs = Type.Object({
     max_graph_size: Type.Integer({
         minimum: 1, maximum: 10, default: 8,
@@ -212,15 +231,15 @@ export const graphsQueryArgs = Type.Object({
         name: Type.String({
             pattern: ACCEPTABLE_INVARIANTS.join("|"),
             examples: ACCEPTABLE_INVARIANTS,
-            default: ACCEPTABLE_INVARIANTS[0],
             title: "Invariant Name"
         }),
         minimum_bound: Type.Optional(Type.Number({title: "Minimum Bound"})),
         maximum_bound: Type.Optional(Type.Number({title: "Maximum Bound"})),
-    }), {minItems: 2, description: "Name of each invariant to analyse. The first two will be used on the axis. Acceptable values are: " + ACCEPTABLE_INVARIANTS.join(", ") + "."}),
+    }), {description: "Name of each invariant to analyse. The first two will be used on the axis. Acceptable values are: " + ACCEPTABLE_INVARIANTS.join(", ") + "."}),
 })
 
 export type IGraphsQueryArgs = Static<typeof graphsQueryArgs>;
+export type IPolytopeQueryArgs = Static<typeof polytopeQueryArgs>;
 
 
 interface IGraphsQueryResults {
@@ -375,7 +394,7 @@ function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, 
     return raw_query
 }
 
-function build_points_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, bounds: any): string {
+function build_points_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, bounds?: StaticArray<TObject<{name: TString, minimum_bound: TOptional<TNumber>, maximum_bound: TOptional<TNumber>}>>): string {
     let raw_query = part1_points()
 
     invariants.forEach((invariant, index) => {
@@ -395,7 +414,7 @@ function build_points_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>,
     raw_query += part3()
 
     // Filter
-    bounds.forEach((bound: any) => {
+    if (bounds) bounds.forEach((bound: any) => {
         if (bound.minimum_bound) {
             raw_query += `    AND ${bound.name}.val >= ${bound.minimum_bound}\n`
         }
@@ -426,7 +445,7 @@ function build_points_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>,
     return raw_query
 }
 
-function build_polytope_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, bounds: any): string {
+function build_polytope_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, bounds?: StaticArray<TObject<{name: TString, minimum_bound: TOptional<TNumber>, maximum_bound: TOptional<TNumber>}>>): string {
     let raw_query = part1_polytope()
 
     invariants.forEach((invariant, index) => {
@@ -446,7 +465,7 @@ function build_polytope_query(invariants: StaticArray<TUnion<TLiteral<string>[]>
     raw_query += part3()
 
     // Filter
-    bounds.forEach((bound: any) => {
+    if (bounds) bounds.forEach((bound: any) => {
         if (bound.minimum_bound) {
             raw_query += `    AND ${bound.name}.val >= ${bound.minimum_bound}\n`
         }
@@ -528,25 +547,18 @@ export async function routes(fastify: FastifyInstance, options: any) {
 
 
     fastify.get<{
-        Querystring: IGraphsQueryArgs
+        Querystring: IPolytopeQueryArgs
     }>("/points", {
-        schema: {querystring: graphsQueryArgs}
+        schema: {querystring: polytopeQueryArgs}
     }, async (request, reply) => {
         const query_params = [request.query.max_graph_size]
 
-        const invariants = request.query.invariants.map(e => e.name)
-
-        const bounds: InvariantBounds = request.query.invariants.reduce((map, obj) => {
-            // @ts-ignore
-            map[obj.name] = {
-                minimum: obj.minimum_bound,
-                maximum: obj.maximum_bound
-            };
-            return map;
-        }, {});
+        const invariants = [request.query.x_invariant, request.query.y_invariant];
+        if (request.query.colour) invariants.push(request.query.colour)
+        if (request.query.constraints) invariants.concat(request.query.constraints.map(e => e.name))
 
 
-        const query = build_points_query(invariants, request.query.invariants)
+        const query = build_points_query(invariants, request.query.constraints)
 
         console.debug("Query: " + query)
 
@@ -564,13 +576,17 @@ export async function routes(fastify: FastifyInstance, options: any) {
 
 
     fastify.get<{
-        Querystring: IGraphsQueryArgs
+        Querystring: IPolytopeQueryArgs
     }>("/polytope", {
-        schema: {querystring: graphsQueryArgs}
+        schema: {querystring: polytopeQueryArgs}
     }, async (request, reply) => {
         const query_params = [request.query.max_graph_size]
 
-        const query = build_polytope_query(request.query.invariants.map(e => e.name), request.query.invariants)
+        const invariants = [request.query.x_invariant, request.query.y_invariant];
+        if (request.query.colour) invariants.push(request.query.colour)
+        if (request.query.constraints) invariants.concat(request.query.constraints.map(e => e.name))
+
+        const query = build_polytope_query(invariants, request.query.constraints)
 
         console.debug("Query: " + query)
 
