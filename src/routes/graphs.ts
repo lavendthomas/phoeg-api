@@ -116,13 +116,15 @@ export function graphQueryArgsFn() {
                 "$ref": "#/definitions/colour"
             },
             "constraints": {
-                "description": "Additional constraints to apply to the query.",
+                "title": "Constraints",
+                "description": "Add additional constraints to the query.",
                 "type": "array",
                 "items": {
                     "type": "object",
                     "properties": {
-                        "invariant": {
+                        "name": {
                             "description": "The invariant to use for the constraint.",
+                            "title": "Invariant",
                             "type": "string",
                             "enum": ACCEPTABLE_INVARIANTS,
                         },
