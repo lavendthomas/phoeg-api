@@ -4,6 +4,7 @@
   "description": "",
   "main": "./build/index.js",
   "scripts": {
+    "prebuild": "mkdirp ./build/phoeglang && nearleyc ./src/phoeglang/phoeglang.ne -o ./build/phoeglang/phoeglang.js",
     "build": "tsc -p tsconfig.json",
     "postbuild": "cp ./src/queries/*.sql ./build/queries",
     "start": "node ./build/index.js",
@@ -20,6 +21,8 @@
     "fastify-compress": "^3.7.0",
     "fastify-cors": "^6.0.2",
     "fastify-swagger": "^4.12.6",
+    "moo": "^0.5.1",
+    "nearley": "^2.20.1",
     "pg": "^8.7.1",
     "pg-format": "^1.0.4",
     "qs": "^6.10.2",
@@ -27,12 +30,15 @@
     "sha.js": "^2.4.11"
   },
   "devDependencies": {
+    "mkdirp": "^1.0.4",
     "@types/node": "^16.11.11",
     "@types/pg": "^8.6.1",
     "@types/pg-format": "^1.0.2",
     "@types/qs": "^6.9.7",
     "@types/redis": "^2.8.32",
     "@types/sha.js": "^2.4.0",
+    "@types/nearley": "^2.11.2",
+    "@types/moo": "^0.5.5",
     "@typescript-eslint/eslint-plugin": "^5.5.0",
     "@typescript-eslint/parser": "^5.5.0",
     "ts-node-dev": "^1.1.8",
