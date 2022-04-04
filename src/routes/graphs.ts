@@ -92,8 +92,8 @@ export function graphQueryArgsFn() {
                 "minimum": 1,
                 "maximum": 10,
                 "default": 8,
-                "title": "Maximum Graph Size",
-                "description": "This setting affects the number of nodes of the graphs that are displayed in the polytope.",
+                "title": "Graph Order",
+                "description": "This setting affects the number of vertices of the graphs that are displayed in the polytope.",
                 "type": "integer"
             },
             "x_invariant": {
