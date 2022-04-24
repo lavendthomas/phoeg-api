@@ -88,7 +88,7 @@ export function graphQueryArgsFn() {
         "type": "object",
         "title": "Phoeg Request",
         "properties": {
-            "max_graph_size": {
+            "order": {
                 "minimum": 1,
                 "maximum": 10,
                 "default": 8,
@@ -140,7 +140,7 @@ export function graphQueryArgsFn() {
                 }
             }
         },
-        "required": ["max_graph_size", "x_invariant", "y_invariant", "add_colouring"],
+        "required": ["order", "x_invariant", "y_invariant", "add_colouring"],
         "definitions":  {
             "colour": {
                 "title": "colour",
@@ -196,7 +196,7 @@ export function graphQueryArgsFn() {
 }
 
 export const polytopeQueryArgs = Type.Object({
-    max_graph_size: Type.Integer({
+    order: Type.Integer({
         minimum: 1, maximum: 10, default: 8,
         description: "Maximum size of the graphs."}),
     x_invariant: Type.String({
@@ -226,7 +226,7 @@ export const polytopeQueryArgs = Type.Object({
 })
 
 export const graphsQueryArgs = Type.Object({
-    max_graph_size: Type.Integer({
+    order: Type.Integer({
         minimum: 1, maximum: 10, default: 8,
         description: "Maximum size of the graphs."}),
     invariants: Type.Array(Type.Object({
@@ -516,14 +516,16 @@ export async function routes(fastify: FastifyInstance, options: any) {
         schema: {querystring: graphsQueryArgs},
     }, async (request, reply) => {
 
-        const query_params = [request.query.max_graph_size]
+        const query_params = [request.query.order]
 
         fastify.log.debug(request.query)
 
         const fixed_arguments: InvariantBounds = {}
         ACCEPTABLE_INVARIANTS.forEach((invariant) => {
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             if (request.query[invariant]) {
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
                 fixed_arguments[invariant] = {}
             }
@@ -540,7 +542,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
                 fastify.log.error(error)
                 reply.code(400).send({})
             } else {
-                const results: IGraphsQueryResults = result.rows[0].json_build_object
+                const results: IGraphsQueryResults = result.rows[0] ? result.rows[0].json_build_object : {}
                 reply.send(results)
             }
         })
@@ -553,7 +555,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
     }>("/points", {
         schema: {querystring: polytopeQueryArgs}
     }, async (request, reply) => {
-        const query_params = [request.query.max_graph_size]
+        const query_params = [request.query.order]
 
         const invariants = [request.query.x_invariant, request.query.y_invariant];
         if (request.query.colour) invariants.push(request.query.colour)
@@ -569,7 +571,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
                 fastify.log.error(error)
                 reply.code(400).send({})
             } else {
-                const results: IGraphsQueryResults = result.rows[0].json_build_object
+                const results: IGraphsQueryResults = result.rows[0] ? result.rows[0].json_build_object : {}
                 reply.send(results)
             }
         })
@@ -582,7 +584,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
     }>("/polytope", {
         schema: {querystring: polytopeQueryArgs}
     }, async (request, reply) => {
-        const query_params = [request.query.max_graph_size]
+        const query_params = [request.query.order]
 
         const invariants = [request.query.x_invariant, request.query.y_invariant];
         if (request.query.colour) invariants.push(request.query.colour)
@@ -597,7 +599,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
                 fastify.log.error(error)
                 reply.code(400).send({})
             } else {
-                const results: IGraphsQueryResults = result.rows[0].json_build_object
+                const results: IGraphsQueryResults = result.rows[0] ? result.rows[0].json_build_object : {}
                 console.debug(results)
                 reply.send(results)
             }

@@ -10,6 +10,7 @@ const grammar = require("./phoeglang/phoeglang.js");
 
 import {routes as endpointRoutes} from "./routes/endpoints"
 import {routes as graphsRoutes} from "./routes/graphs"
+import {routes as invariantsRoutes} from "./routes/invariants"
 import nearley from 'nearley';
 
 const server = fastify({
@@ -84,6 +85,7 @@ server.register(
 )
 
 server.register(endpointRoutes)
+server.register(invariantsRoutes)
 server.register(graphsRoutes, {prefix: "/graphs"})
 
 
