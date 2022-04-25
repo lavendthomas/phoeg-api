@@ -409,7 +409,7 @@ function build_points_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>,
 function build_polytope_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, bounds?: StaticArray<TObject<{name: TString, minimum_bound: TOptional<TNumber>, maximum_bound: TOptional<TNumber>}>>): string {
     let raw_query = part1_polytope()
 
-    all_invariant_names.forEach((invariant, index) => {
+    invariants.forEach((invariant, index) => {
         raw_query += `    ${invariant}.val AS ${invariant}`
         if (index < invariants.length-1) {
             raw_query += ","
