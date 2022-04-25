@@ -357,7 +357,6 @@ function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, 
 function build_points_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, bounds?: StaticArray<TObject<{name: TString, minimum_bound: TOptional<TNumber>, maximum_bound: TOptional<TNumber>}>>): string {
     let raw_query = part1_points()
 
-
     invariants.forEach((invariant, index) => {
         raw_query += `    ${invariant}.val AS ${invariant}`
         if (index < invariants.length-1) {
@@ -377,13 +376,9 @@ function build_points_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>,
     raw_query += part3()
 
     // Filter
-    if (bounds) bounds.forEach((bound: any) => {
-        if (bound.minimum_bound) {
-            raw_query += `    AND ${bound.name}.val >= ${bound.minimum_bound}\n`
-        }
-        if (bound.maximum_bound) {
-            raw_query += `    AND ${bound.name}.val <= ${bound.maximum_bound}\n`
-        }
+    if (bounds) bounds.forEach((bound) => {
+        raw_query += `    AND ${bound.name}.val >= ${bound.minimum_bound}\n`
+        raw_query += `    AND ${bound.name}.val <= ${bound.maximum_bound}\n`
     })
 
     raw_query += '    GROUP BY '
@@ -431,12 +426,8 @@ function build_polytope_query(invariants: StaticArray<TUnion<TLiteral<string>[]>
 
     // Filter
     if (bounds) bounds.forEach((bound: any) => {
-        if (bound.minimum_bound) {
-            raw_query += `    AND ${bound.name}.val >= ${bound.minimum_bound}\n`
-        }
-        if (bound.maximum_bound) {
-            raw_query += `    AND ${bound.name}.val <= ${bound.maximum_bound}\n`
-        }
+        raw_query += `    AND ${bound.name}.val >= ${bound.minimum_bound}\n`
+        raw_query += `    AND ${bound.name}.val <= ${bound.maximum_bound}\n`
     })
 
     raw_query += '    GROUP BY '
