@@ -9,7 +9,7 @@ import {API_PATH, API_PORT, SERVER_ADDRESS} from "./.env";
 const grammar = require("./phoeglang/phoeglang.js");
 
 import {routes as endpointRoutes} from "./routes/endpoints"
-import {routes as graphsRoutes} from "./routes/graphs"
+import {allInvariants, fetchInvariants, routes as graphsRoutes} from "./routes/graphs"
 import {routes as invariantsRoutes} from "./routes/invariants"
 import nearley from 'nearley';
 
@@ -89,18 +89,20 @@ server.register(invariantsRoutes)
 server.register(graphsRoutes, {prefix: "/graphs"})
 
 
-server.listen(API_PORT, (err, address) => {
+server.listen(API_PORT, async (err, address) =>  {
     if (err) {
         console.error(err)
         process.exit(1)
     }
 
-    const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
-    try {
-        parser.feed('MAX(7,6-5) < 5 AND MIN(3,4-2) > 7')
-    } catch (parseError: any) {
-        console.log("Error at character " + parseError.offset); // "Error at character 9"
-    }
-    console.log(JSON.stringify(parser.results));
+    await allInvariants(); // pre-fetch invariants
+
+    // const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
+    // try {
+    //     parser.feed('MAX(7,6-5) < 5 AND MIN(3,4-2) > 7')
+    // } catch (parseError: any) {
+    //     console.log("Error at character " + parseError.offset); // "Error at character 9"
+    // }
+    // console.log(JSON.stringify(parser.results));
     console.log(`Server listening at ${address}`)
 })

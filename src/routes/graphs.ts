@@ -2,67 +2,10 @@ import {FastifyInstance} from "fastify";
 import phoeg from "../db/phoeg";
 import {Static, StaticArray, TLiteral, TNumber, TObject, TOptional, TString, TUnion, Type} from '@sinclair/typebox';
 
-const ACCEPTABLE_INVARIANTS = [
-    'chromatic_number',
-    'is_planar',
-    'fib',
-    'num_col',
-    'diam',
-    'semi_total_dom_num',
-    'num_pending',
-    'min_vertex_cover',
-    'fib_alt',
-    'average_distance',
-    'max_deg',
-    'cubic',
-    'is_connected',
-    'clique_max',
-    'not_fulljoin',
-    'clawfree',
-    'generators',
-    'total_eccentricity',
-    'connected',
-    'conn_clawfree',
-    'total_dom_num',
-    'conn_4regular',
-    'num_vertices',
-    'min_deg',
-    'conn_5regular_14',
-    'max_indep_set',
-    'num_edges',
-    'totavmat',
-    'wiener_index',
-    'irregularity',
-    'raster_overviews',
-    'eci',
-    'dnm',
-    'geography_columns',
-    'rapavmaxmat',
-    'graphs',
-    'dom_num',
-    'eccentric_connectivity_index',
-    'spatial_ref_sys',
-    'geometry_columns',
-    'sum_blocks',
-    'num_deg_nm1',
-    'raster_columns',
-    'is_tree',
-    'max_huv',
-    'conn_mindeg3_maxdeg5',
-    'av_col',
-    'conn_min_deg3_max_deg4',
-    'radius'
-].sort()
+let ACCEPTABLE_INVARIANTS: string[] = []
 
 type Invariant = typeof ACCEPTABLE_INVARIANTS[number]
 
-
-type InvariantBounds = {
-    [inv in Invariant]?: {
-        minimum?: number,
-        maximum?: number,
-    }
-}
 
 type InvariantConstraint = {
     name: Invariant
@@ -72,12 +15,17 @@ type InvariantConstraint = {
 
 type InvariantConstraints = InvariantConstraint[]
 
-export function allInvariants(): string[] {
-    return ACCEPTABLE_INVARIANTS
+export async function allInvariants(): Promise<string[]> {
+    // Cache the result in a variable
+    return fetchInvariants().then((i) => ACCEPTABLE_INVARIANTS = i);
 }
 
-function fetchInvariants(): string[] {
-    return []
+export async function fetchInvariants(): Promise<string[]> {
+    let answer: string[] = []
+    await phoeg.cached_query("SELECT tablename FROM tables WHERE datatype = 'integer' or datatype = 'double precision' or datatype = 'real';", [], async (error, result) => {
+        answer = result.rows.map((row) => row.tablename)
+    })
+    return answer
 }
 
 
@@ -378,18 +326,6 @@ function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, 
     raw_query += part3()
 
     // Filter
-    // console.log(values) // was constraints
-    // ACCEPTABLE_INVARIANTS.forEach((invariant) => {
-    //     if (values[invariant]) {
-    //         if (Number.isInteger(values[invariant])) {
-    //             raw_query += `    AND ${invariant}.val = ${values[invariant]}\n`
-    //         } else { // Is a number but not an integer -> float
-    //             raw_query += `    AND ABS(${invariant}.val - ${values[invariant]}) < 0.00001\n`
-    //         }
-    //     }
-    // })
-    // Filter
-    console.log(constraints)
     constraints.forEach((cst) => {
         raw_query += `    AND ${cst.name}.val > ${cst.minimum_bound}\n`
         raw_query += `    AND ${cst.name}.val < ${cst.maximum_bound}\n`
@@ -537,12 +473,10 @@ export async function routes(fastify: FastifyInstance, options: any) {
         const query_params = [request.query.order]
 
         // @ts-ignore
-        const constraints: InvariantConstraints = request.body.constraints
+        const constraints: InvariantConstraints = request.query.constraints
 
         fastify.log.debug(constraints)
 
-
-        //const query = format(raw_query, ...request.query.invariants) // TODO use format instead of building by hand ?
         const query = build_graph_query(request.query.invariants.map((e) => e.name), constraints)
 
         console.debug("Query: " + query)
@@ -570,7 +504,6 @@ export async function routes(fastify: FastifyInstance, options: any) {
         const invariants = [request.query.x_invariant, request.query.y_invariant];
         if (request.query.colour) invariants.push(request.query.colour)
         if (request.query.constraints) invariants.concat(request.query.constraints.map(e => e.name))
-
 
         const query = build_points_query(invariants, request.query.constraints)
 
