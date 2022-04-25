@@ -309,8 +309,7 @@ SELECT ST_AsText(ST_ConvexHull(ST_Collect(ST_Point(${invariants.join(",")})))) F
 function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, constraints: InvariantConstraints): string {
     let raw_query = part1()
 
-    const all_invariant_names = [...new Set(invariants.concat(constraints.map((c) => c.name)))] // Unique on the name of invariants
-    all_invariant_names.forEach((invariant, index) => {
+    invariants.forEach((invariant, index) => {
         raw_query += `    ${invariant}.val AS ${invariant}`
         if (index < invariants.length-1) {
             raw_query += ","
@@ -320,7 +319,9 @@ function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, 
 
     raw_query += `    FROM num_vertices n\n`
 
-    invariants.forEach((invariant, index) => {
+    const all_invariant_names = [...new Set(invariants.concat(constraints.map((c) => c.name)))] // Unique on the name of invariants
+
+    all_invariant_names.forEach((invariant, index) => {
         raw_query += `    JOIN ${invariant} ${invariant} USING(signature)\n`
     })
 
@@ -354,8 +355,8 @@ function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, 
 function build_points_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, bounds?: StaticArray<TObject<{name: TString, minimum_bound: TOptional<TNumber>, maximum_bound: TOptional<TNumber>}>>): string {
     let raw_query = part1_points()
 
-    const all_invariant_names = bounds ? [...new Set(invariants.concat(bounds.map((c) => c.name)))] : invariants// Unique on the name of invariants
-    all_invariant_names.forEach((invariant, index) => {
+
+    invariants.forEach((invariant, index) => {
         raw_query += `    ${invariant}.val AS ${invariant}`
         if (index < invariants.length-1) {
             raw_query += ","
@@ -365,7 +366,9 @@ function build_points_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>,
 
     raw_query += part2()
 
-    invariants.forEach((invariant, index) => {
+    const all_invariant_names = bounds ? [...new Set(invariants.concat(bounds.map((c) => c.name)))] : invariants// Unique on the name of invariants
+
+    all_invariant_names.forEach((invariant, index) => {
         raw_query += `    JOIN ${invariant} ${invariant} USING(signature)\n`
     })
 
@@ -406,7 +409,6 @@ function build_points_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>,
 function build_polytope_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, bounds?: StaticArray<TObject<{name: TString, minimum_bound: TOptional<TNumber>, maximum_bound: TOptional<TNumber>}>>): string {
     let raw_query = part1_polytope()
 
-    const all_invariant_names = bounds ? [...new Set(invariants.concat(bounds.map((c) => c.name)))] : invariants// Unique on the name of invariants
     all_invariant_names.forEach((invariant, index) => {
         raw_query += `    ${invariant}.val AS ${invariant}`
         if (index < invariants.length-1) {
@@ -417,7 +419,9 @@ function build_polytope_query(invariants: StaticArray<TUnion<TLiteral<string>[]>
 
     raw_query += part2()
 
-    invariants.forEach((invariant, index) => {
+    const all_invariant_names = bounds ? [...new Set(invariants.concat(bounds.map((c) => c.name)))] : invariants// Unique on the name of invariants
+
+    all_invariant_names.forEach((invariant, index) => {
         raw_query += `    JOIN ${invariant} ${invariant} USING(signature)\n`
     })
 
