@@ -23,7 +23,7 @@ export async function allInvariants(): Promise<string[]> {
 export async function fetchInvariants(): Promise<string[]> {
     let answer: string[] = []
     await phoeg.cached_query("SELECT tablename FROM tables WHERE datatype = 'integer' or datatype = 'double precision' or datatype = 'real';", [], async (error, result) => {
-        answer = result.rows.map((row) => row.tablename)
+        answer = result.rows.map((row) => row.tablename).sort()
     })
     return answer
 }
