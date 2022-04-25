@@ -319,7 +319,7 @@ function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, 
 
     raw_query += `    FROM num_vertices n\n`
 
-    const all_invariant_names = [...new Set(invariants.concat(constraints.map((c) => c.name)))] // Unique on the name of invariants
+    const all_invariant_names = constraints ? [...new Set(invariants.concat(constraints.map((c) => c.name)))] : invariants // Unique on the name of invariants
 
     all_invariant_names.forEach((invariant, index) => {
         raw_query += `    JOIN ${invariant} ${invariant} USING(signature)\n`
