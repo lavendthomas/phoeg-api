@@ -197,7 +197,7 @@ export const graphsQueryArgs = Type.Object({
         }),
         minimum_bound: Type.Optional(Type.Number({title: "Minimum Bound"})),
         maximum_bound: Type.Optional(Type.Number({title: "Maximum Bound"})),
-    }), {description: "Name of each invariant to analyse. The first two will be used on the axis. Acceptable values are: " + ACCEPTABLE_INVARIANTS.join(", ") + "."}),
+    }), {description: "Name of each invariant to analyse. The first two will be used on the axis. Acceptable values are: " + ACCEPTABLE_INVARIANTS.join(", ") + "."})
 })
 
 export type IGraphsQueryArgs = Static<typeof graphsQueryArgs>;
@@ -309,7 +309,8 @@ SELECT ST_AsText(ST_ConvexHull(ST_Collect(ST_Point(${invariants.join(",")})))) F
 function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, constraints: InvariantConstraints): string {
     let raw_query = part1()
 
-    invariants.forEach((invariant, index) => {
+    const all_invariant_names = [...new Set(invariants.concat(constraints.map((c) => c.name)))] // Unique on the name of invariants
+    all_invariant_names.forEach((invariant, index) => {
         raw_query += `    ${invariant}.val AS ${invariant}`
         if (index < invariants.length-1) {
             raw_query += ","
