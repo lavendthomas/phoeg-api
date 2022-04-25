@@ -95,12 +95,12 @@ server.listen(API_PORT, (err, address) => {
         process.exit(1)
     }
 
-    // const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
-    // try {
-    //     parser.feed('MAX(7,6-5)')
-    // } catch (parseError: any) {
-    //     console.log("Error at character " + parseError.offset); // "Error at character 9"
-    // }
-    // console.log(JSON.stringify(parser.results));
+    const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
+    try {
+        parser.feed('MAX(7,6-5) < 5 AND MIN(3,4-2) > 7')
+    } catch (parseError: any) {
+        console.log("Error at character " + parseError.offset); // "Error at character 9"
+    }
+    console.log(JSON.stringify(parser.results));
     console.log(`Server listening at ${address}`)
 })

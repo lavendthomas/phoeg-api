@@ -5,17 +5,31 @@
 
 main -> statement {% id %}
 
-statement -> condition                          {% id %}
+statement -> disjonction                                {% (d) => "SELECT " + d[0] + ";" %}
+           | expression
 
-operation -> condition # for !, AND, XOR etc
 
-condition -> expression                         {% id %}
-           | expression _ "<" _ expression
-           | expression _ "<=" _ expression
-           | expression _ ">" _ expression
-           | expression _ ">=" _ expression
-           | expression _ "==" _ expression
-           | expression _ "!=" _ expression
+disjonction -> excusion                                 {% id %}
+           | excusion _ "OR" _ exclusion                {% (d) => d[0] + " OR " + d[4] %}
+
+excusion -> conjonction                                 {% id %}
+          | conjonction "XOR" conjonction               {% (d) => d[0] + " XOR " + d[4] %}
+
+
+conjonction -> negation                                 {% id %}
+             | conjonction _ "AND" _ conjonction        {% (d) => d[0] + " AND " + d[4] %}
+
+negation -> condition                                   {% id %}
+          | "NOT" _ condition                           {% (d) => "NOT " + d[2] %}
+          |  "!"  condition                             {% (d) => "NOT " + d[2] %}
+
+
+condition -> expression _ "<" _ expression      {% (d) => d[0] + "<"  + d[4] %}
+           | expression _ "<=" _ expression     {% (d) => d[0] + "<=" + d[4] %}
+           | expression _ ">" _ expression      {% (d) => d[0] + ">"  + d[4] %}
+           | expression _ ">=" _ expression     {% (d) => d[0] + "<=" + d[4] %}
+           | expression _ "==" _ expression     {% (d) => d[0] + "="  + d[4] %}
+           | expression _ "!=" _ expression     {% (d) => d[0] + "<>" + d[4] %}
 
 
 
@@ -36,14 +50,14 @@ arithmetic_expression -> terms_list             {% id %}
 terms_list -> terms_list _ "," _ term           {% (d) => [...d[0], d[4]] %}
             | term                              {% (d) => [d[0]] %}
 
-term -> term _ "+" _ factor                     {% (d) => d[0] + d[4] %}
-      | term _ "-" _ factor                     {% (d) => d[0] - d[4] %}
+term -> term _ "+" _ factor                     {% (d) => d[0].toString() + "+" + d[4].toString() %}
+      | term _ "-" _ factor                     {% (d) => d[0].toString() + "-" + d[4].toString() %}
       | factor                                  {% id %}
 
-factor -> factor _ "*" _ power                  {% (d) => d[0] * d[4] %}
-        | factor _ "/" _ power                  {% (d) => d[0] / d[4] %}
-        | factor _ "%" _ power                  {% (d) => d[0] % d[4] %}
-        | factor _ "mod" _ power                {% (d) => d[0] % d[4] %}
+factor -> factor _ "*" _ power                  {% (d) => d[0].toString() + "*" + d[4].toString() %}
+        | factor _ "/" _ power                  {% (d) => d[0].toString() + "/" + d[4].toString() %}
+        | factor _ "%" _ power                  {% (d) => d[0].toString() + "%" + d[4].toString() %}
+        | factor _ "mod" _ power                {% (d) => d[0].toString() + "%" + d[4].toString() %}
         | power                                 {% id %}
 
 power -> power _ "^" _ NUMBER                   {% (d) => Math.pow(d[0], d[4]) %}

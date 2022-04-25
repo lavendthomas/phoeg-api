@@ -64,8 +64,20 @@ type InvariantBounds = {
     }
 }
 
+type InvariantConstraint = {
+    name: Invariant
+    minimum_bound: number
+    maximum_bound: number
+}
+
+type InvariantConstraints = InvariantConstraint[]
+
 export function allInvariants(): string[] {
     return ACCEPTABLE_INVARIANTS
+}
+
+function fetchInvariants(): string[] {
+    return []
 }
 
 
@@ -346,7 +358,7 @@ function part5_polytope(invariants: string[]): string {
 SELECT ST_AsText(ST_ConvexHull(ST_Collect(ST_Point(${invariants.join(",")})))) FROM data;`
 }
 
-function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, values: InvariantBounds): string {
+function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, constraints: InvariantConstraints): string {
     let raw_query = part1()
 
     invariants.forEach((invariant, index) => {
@@ -366,15 +378,21 @@ function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, 
     raw_query += part3()
 
     // Filter
-    console.log(values)
-    ACCEPTABLE_INVARIANTS.forEach((invariant) => {
-        if (values[invariant]) {
-            if (Number.isInteger(values[invariant])) {
-                raw_query += `    AND ${invariant}.val = ${values[invariant]}\n`
-            } else { // Is a number but not an integer -> float
-                raw_query += `    AND ABS(${invariant}.val - ${values[invariant]}) < 0.00001\n`
-            }
-        }
+    // console.log(values) // was constraints
+    // ACCEPTABLE_INVARIANTS.forEach((invariant) => {
+    //     if (values[invariant]) {
+    //         if (Number.isInteger(values[invariant])) {
+    //             raw_query += `    AND ${invariant}.val = ${values[invariant]}\n`
+    //         } else { // Is a number but not an integer -> float
+    //             raw_query += `    AND ABS(${invariant}.val - ${values[invariant]}) < 0.00001\n`
+    //         }
+    //     }
+    // })
+    // Filter
+    console.log(constraints)
+    constraints.forEach((cst) => {
+        raw_query += `    AND ${cst.name}.val > ${cst.minimum_bound}\n`
+        raw_query += `    AND ${cst.name}.val < ${cst.maximum_bound}\n`
     })
 
 
@@ -518,22 +536,14 @@ export async function routes(fastify: FastifyInstance, options: any) {
 
         const query_params = [request.query.order]
 
-        fastify.log.debug(request.query)
+        // @ts-ignore
+        const constraints: InvariantConstraints = request.body.constraints
 
-        const fixed_arguments: InvariantBounds = {}
-        ACCEPTABLE_INVARIANTS.forEach((invariant) => {
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            if (request.query[invariant]) {
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
-                fixed_arguments[invariant] = {}
-            }
-        })
+        fastify.log.debug(constraints)
 
 
         //const query = format(raw_query, ...request.query.invariants) // TODO use format instead of building by hand ?
-        const query = build_graph_query(request.query.invariants.map((e) => e.name), fixed_arguments)
+        const query = build_graph_query(request.query.invariants.map((e) => e.name), constraints)
 
         console.debug("Query: " + query)
 
