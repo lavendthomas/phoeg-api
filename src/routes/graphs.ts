@@ -328,10 +328,12 @@ function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, 
     raw_query += part3()
 
     // Filter
-    constraints.forEach((cst) => {
-        raw_query += `    AND ${cst.name}.val > ${cst.minimum_bound}\n`
-        raw_query += `    AND ${cst.name}.val < ${cst.maximum_bound}\n`
-    })
+    if (constraints) {
+        constraints.forEach((cst) => {
+            raw_query += `    AND ${cst.name}.val > ${cst.minimum_bound}\n`
+            raw_query += `    AND ${cst.name}.val < ${cst.maximum_bound}\n`
+        })
+    }
 
 
     raw_query += '    ORDER BY '
