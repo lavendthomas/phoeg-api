@@ -1,11 +1,9 @@
 import {FastifyInstance} from "fastify";
 import phoeg from "../db/phoeg";
 import {Static, StaticArray, TLiteral, TNumber, TObject, TOptional, TString, TUnion, Type} from '@sinclair/typebox';
-
-let ACCEPTABLE_INVARIANTS: string[] = []
+import {ACCEPTABLE_INVARIANTS} from "./invariants";
 
 type Invariant = typeof ACCEPTABLE_INVARIANTS[number]
-
 
 type InvariantConstraint = {
     name: Invariant
@@ -14,19 +12,6 @@ type InvariantConstraint = {
 }
 
 type InvariantConstraints = InvariantConstraint[]
-
-export async function allInvariants(): Promise<string[]> {
-    // Cache the result in a variable
-    return fetchInvariants().then((i) => ACCEPTABLE_INVARIANTS = i);
-}
-
-export async function fetchInvariants(): Promise<string[]> {
-    let answer: string[] = []
-    await phoeg.cached_query("SELECT tablename FROM tables WHERE datatype = 'integer' or datatype = 'double precision' or datatype = 'real';", [], async (error, result) => {
-        answer = result.rows.map((row) => row.tablename).sort()
-    })
-    return answer
-}
 
 
 /**

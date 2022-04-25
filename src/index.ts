@@ -6,12 +6,11 @@ import fastifySwagger from "fastify-swagger";
 import {parse} from 'qs';
 
 import {API_PATH, API_PORT, SERVER_ADDRESS} from "./.env";
-const grammar = require("./phoeglang/phoeglang.js");
-
 import {routes as endpointRoutes} from "./routes/endpoints"
-import {allInvariants, fetchInvariants, routes as graphsRoutes} from "./routes/graphs"
-import {routes as invariantsRoutes} from "./routes/invariants"
-import nearley from 'nearley';
+import {routes as graphsRoutes} from "./routes/graphs"
+import {allInvariants, InvariantTypes, routes as invariantsRoutes} from "./routes/invariants"
+
+const grammar = require("./phoeglang/phoeglang.js");
 
 const server = fastify({
     logger: {level: 'debug'},
@@ -95,7 +94,7 @@ server.listen(API_PORT, async (err, address) =>  {
         process.exit(1)
     }
 
-    await allInvariants(); // pre-fetch invariants
+    await allInvariants(InvariantTypes.numbers); // pre-fetch invariants
 
     // const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
     // try {

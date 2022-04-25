@@ -1,6 +1,7 @@
 import {FastifyInstance} from "fastify";
 
-import {allInvariants, graphQueryArgsFn, phoegDefinitions} from "./graphs"
+import {graphQueryArgsFn, phoegDefinitions} from "./graphs"
+import {allInvariants, InvariantTypes} from "./invariants";
 
 export async function routes(fastify: FastifyInstance, options: any) {
     fastify.get('/endpoints', async (request, reply) => {
@@ -11,7 +12,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
                     description: 'The default template.',
                     path: '/graphs',
                     definitions: phoegDefinitions(),
-                    invariants: allInvariants(),
+                    invariants: allInvariants(InvariantTypes.numbers),
                     params: graphQueryArgsFn(),
                 },
             ]
