@@ -21,7 +21,7 @@ export let ACCEPTABLE_INVARIANTS: string[] = []
 
 export async function allInvariants(type: InvariantTypes = InvariantTypes.any): Promise<string[]> {
     // Cache the result in a variable
-    return fetchInvariants(type).then((i) => {if (type == InvariantTypes.numbers) ACCEPTABLE_INVARIANTS = i; return i});
+    return fetchInvariants(type).then((i) => {if (type == InvariantTypes.any) ACCEPTABLE_INVARIANTS = i; return i});
 }
 
 export async function fetchInvariants(type: InvariantTypes): Promise<string[]> {
