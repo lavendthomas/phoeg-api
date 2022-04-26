@@ -40,3 +40,10 @@ Content-Type: application/json
 
 
 GET http://localhost:8080/phoeglang HTTP/1.1
+
+
+
+###
+
+# This is broken
+GET http://localhost:8080/graphs/points?order=7&x_invariant=av_col&y_invariant=num_edges&colour=num_vertices&constraints%5B0%5D%5Bname%5D=is_connected&constraints%5B0%5D%5Bminimum_bound%5D=0&constraints%5B0%5D%5Bmaximum_bound%5D=0

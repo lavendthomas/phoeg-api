@@ -11,6 +11,33 @@ export enum InvariantTypes {
     booleans,
 }
 
+export class Invariant {
+    tablename: string = "";
+    datatype: InvariantTypes = InvariantTypes.any;
+    name: string = "";
+    description?: string = "";
+
+    constructor(tablename: string, datatype: string, name: string, description?: string) {
+        this.tablename = tablename;
+        switch (datatype) {
+            case "integer":
+                this.datatype = InvariantTypes.integers;
+                break
+            case "real":
+                this.datatype = InvariantTypes.reals;
+                break;
+            case "double precision":
+                this.datatype = InvariantTypes.doubles;
+                break;
+            case "boolean":
+                this.datatype = InvariantTypes.booleans;
+                break;
+        }
+        this.name = name;
+        this.description = description;
+    }
+}
+
 export const InvariantsQueryArgs = Type.Object({
     type: Type.Optional(Type.String())
 })
@@ -19,14 +46,23 @@ export type IInvariantsQueryArgs = Static<typeof InvariantsQueryArgs>;
 
 export let ACCEPTABLE_INVARIANTS: string[] = []
 
+export let INVARIANTS: Invariant[] = []
+
 export async function allInvariants(type: InvariantTypes = InvariantTypes.any): Promise<string[]> {
     // Cache the result in a variable
-    return fetchInvariants(type).then((i) => {if (type == InvariantTypes.any) ACCEPTABLE_INVARIANTS = i; return i});
+    return fetchInvariants(type).then((i: Invariant[]) => {
+        const allInvariants = i.map((invariant: Invariant) => invariant.tablename)
+        if (type == InvariantTypes.any) {
+            ACCEPTABLE_INVARIANTS = allInvariants
+            INVARIANTS = i
+        }
+        return allInvariants
+    });
 }
 
-export async function fetchInvariants(type: InvariantTypes): Promise<string[]> {
-    let answer: string[] = []
-    let query = "SELECT tablename FROM tables "
+export async function fetchInvariants(type: InvariantTypes): Promise<Invariant[]> {
+    let answer: Invariant[] = []
+    let query = "SELECT tablename, datatype, name, description FROM tables "
     switch (type) {
         case InvariantTypes.numbers:
             query += "WHERE datatype = 'integer' or datatype = 'double precision' or datatype = 'real'"
@@ -46,7 +82,18 @@ export async function fetchInvariants(type: InvariantTypes): Promise<string[]> {
     }
     query += ";"
     await phoeg.cached_query(query, [], async (error, result) => {
-        answer = result.rows.map((row) => row.tablename).sort()
+        answer = result.rows.map((row) => new Invariant(
+            row.tablename,
+            row.datatype,
+            row.name,
+            row.description
+        )).sort((a, b) => {
+            if (a.tablename < b.tablename) return -1
+            if (a.tablename > b.tablename) return 1
+            if (a.name < b.name) return -1
+            if (a.name > b.name) return 1
+            return 0
+        });
     })
     return answer
 }

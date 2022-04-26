@@ -1,7 +1,7 @@
 import {FastifyInstance} from "fastify";
 import phoeg from "../db/phoeg";
 import {Static, StaticArray, TLiteral, TNumber, TObject, TOptional, TString, TUnion, Type} from '@sinclair/typebox';
-import {ACCEPTABLE_INVARIANTS} from "./invariants";
+import {ACCEPTABLE_INVARIANTS, INVARIANTS, InvariantTypes} from "./invariants";
 
 type Invariant = typeof ACCEPTABLE_INVARIANTS[number]
 
@@ -291,6 +291,27 @@ function part5_polytope(invariants: string[]): string {
 SELECT ST_AsText(ST_ConvexHull(ST_Collect(ST_Point(${invariants.join(",")})))) FROM data;`
 }
 
+
+function condition(invariant_name: string, min_bound?: number, max_bound?: number): string {
+    if (min_bound === undefined && max_bound === undefined) {
+        return ''
+    }
+    let raw_query = ""
+    if (INVARIANTS.filter(i => i.name === invariant_name)[0].datatype === InvariantTypes.booleans) {
+        if (min_bound === 0 && max_bound === 0) {
+            raw_query = `    AND ${invariant_name}.val = false\n`
+        } else if (min_bound === 1 && max_bound === 1) {
+            raw_query = `    AND ${invariant_name}.val = true\n`
+        } else {
+            console.warn("Boolean invariant with non-zero min/max bounds not supported")
+        }
+    } else {
+        raw_query += `    AND ${invariant_name}.val >= ${min_bound}\n`
+        raw_query += `    AND ${invariant_name}.val <= ${max_bound}\n`
+    }
+    return raw_query
+}
+
 function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, constraints: InvariantConstraints): string {
     let raw_query = part1()
 
@@ -314,9 +335,13 @@ function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, 
 
     // Filter
     if (constraints) {
+
+        
+
         constraints.forEach((cst) => {
-            raw_query += `    AND ${cst.name}.val > ${cst.minimum_bound}\n`
-            raw_query += `    AND ${cst.name}.val < ${cst.maximum_bound}\n`
+            raw_query += condition(cst.name, cst.minimum_bound, cst.maximum_bound)
+            // raw_query += `    AND ${cst.name}.val > ${cst.minimum_bound}\n`
+            // raw_query += `    AND ${cst.name}.val < ${cst.maximum_bound}\n`
         })
     }
 
@@ -362,8 +387,9 @@ function build_points_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>,
 
     // Filter
     if (bounds) bounds.forEach((bound) => {
-        raw_query += `    AND ${bound.name}.val >= ${bound.minimum_bound}\n`
-        raw_query += `    AND ${bound.name}.val <= ${bound.maximum_bound}\n`
+        raw_query += condition(bound.name, bound.minimum_bound, bound.maximum_bound)
+        // raw_query += `    AND ${bound.name}.val >= ${bound.minimum_bound}\n`
+        // raw_query += `    AND ${bound.name}.val <= ${bound.maximum_bound}\n`
     })
 
     raw_query += '    GROUP BY '
@@ -411,8 +437,9 @@ function build_polytope_query(invariants: StaticArray<TUnion<TLiteral<string>[]>
 
     // Filter
     if (bounds) bounds.forEach((bound: any) => {
-        raw_query += `    AND ${bound.name}.val >= ${bound.minimum_bound}\n`
-        raw_query += `    AND ${bound.name}.val <= ${bound.maximum_bound}\n`
+        raw_query += condition(bound.name, bound.minimum_bound, bound.maximum_bound)
+        // raw_query += `    AND ${bound.name}.val >= ${bound.minimum_bound}\n`
+        // raw_query += `    AND ${bound.name}.val <= ${bound.maximum_bound}\n`
     })
 
     raw_query += '    GROUP BY '
