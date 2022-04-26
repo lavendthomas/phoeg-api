@@ -9,10 +9,10 @@ statement -> disjonction                                {% (d) => "SELECT " + d[
            | expression
 
 
-disjonction -> excusion                                 {% id %}
-           | excusion _ "OR" _ exclusion                {% (d) => d[0] + " OR " + d[4] %}
+disjonction -> exclusion                                 {% id %}
+           | exclusion _ "OR" _ exclusion                {% (d) => d[0] + " OR " + d[4] %}
 
-excusion -> conjonction                                 {% id %}
+exclusion -> conjonction                                 {% id %}
           | conjonction "XOR" conjonction               {% (d) => d[0] + " XOR " + d[4] %}
 
 

@@ -1,0 +1,42 @@
+
+GET http://localhost:8080/endpoints HTTP/1.1
+
+###
+
+GET http://localhost:8080/invariants?type=any HTTP/1.1
+
+###
+
+GET http://localhost:8080/invariants?type=numbers HTTP/1.1
+
+###
+
+POST http://localhost:8080/phoeglang HTTP/1.1
+Content-Type: application/json
+
+{
+    "query": "MAX(7,6-5) < 5 AND MIN(3,4-2) > 7"
+}
+
+###
+
+POST http://localhost:8080/phoeglang HTTP/1.1
+Content-Type: application/json
+
+{
+    "query": "MAX(7,6-5) < 5 AND MIN(av_col,4-2) > 7"
+}
+
+###
+
+POST http://localhost:8080/phoeglang HTTP/1.1
+Content-Type: application/json
+
+{
+    "query": "av_col"
+}
+
+###
+
+
+GET http://localhost:8080/phoeglang HTTP/1.1

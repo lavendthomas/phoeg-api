@@ -5,12 +5,11 @@ import fastifySwagger from "fastify-swagger";
 
 import {parse} from 'qs';
 
-import {API_PATH, API_PORT, SERVER_ADDRESS} from "./.env";
+import {API_PATH, API_PORT, SERVER_ADDRESS} from "./.env"
 import {routes as endpointRoutes} from "./routes/endpoints"
 import {routes as graphsRoutes} from "./routes/graphs"
 import {allInvariants, InvariantTypes, routes as invariantsRoutes} from "./routes/invariants"
-
-const grammar = require("./phoeglang/phoeglang.js");
+import {routes as phoeglangRoutes} from "./routes/phoeglang"
 
 const server = fastify({
     logger: {level: 'debug'},
@@ -85,6 +84,7 @@ server.register(
 
 server.register(endpointRoutes)
 server.register(invariantsRoutes)
+server.register(phoeglangRoutes)
 server.register(graphsRoutes, {prefix: "/graphs"})
 
 
@@ -96,12 +96,6 @@ server.listen(API_PORT, async (err, address) =>  {
 
     await allInvariants(InvariantTypes.numbers); // pre-fetch invariants
 
-    // const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
-    // try {
-    //     parser.feed('MAX(7,6-5) < 5 AND MIN(3,4-2) > 7')
-    // } catch (parseError: any) {
-    //     console.log("Error at character " + parseError.offset); // "Error at character 9"
-    // }
-    // console.log(JSON.stringify(parser.results));
+
     console.log(`Server listening at ${address}`)
 })
