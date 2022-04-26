@@ -16,7 +16,10 @@ export async function routes(fastify: FastifyInstance, options: any) {
             parser.feed(request.body.query)
         } catch (parseError: any) {
             console.log("Error at character " + parseError.offset); // "Error at character 9"
-            reply.code(400).send("Error at character " + parseError.offsets)
+            reply.code(400).send({
+                message: "Error at character " + parseError.offset,
+                parseError: parseError
+            })
         }
         reply.code(200).send(parser.results)
     })

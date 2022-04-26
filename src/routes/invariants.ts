@@ -7,7 +7,8 @@ export enum InvariantTypes {
     numbers,
     integers,
     reals,
-    doubles
+    doubles,
+    booleans,
 }
 
 export const InvariantsQueryArgs = Type.Object({
@@ -39,9 +40,11 @@ export async function fetchInvariants(type: InvariantTypes): Promise<string[]> {
         case InvariantTypes.doubles:
             query += "WHERE datatype = 'double precision'"
             break;
+        case InvariantTypes.booleans:
+            query += "WHERE datatype = 'boolean'"
+            break;
     }
     query += ";"
-    console.log(query)
     await phoeg.cached_query(query, [], async (error, result) => {
         answer = result.rows.map((row) => row.tablename).sort()
     })
@@ -59,6 +62,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
             case "numbers": type = InvariantTypes.numbers; break;
             case "reals": type = InvariantTypes.reals; break;
             case "doubles": type = InvariantTypes.doubles; break;
+            case "booleans": type = InvariantTypes.booleans; break;
             default: reply.code(400).send({reason: "Please enter a valid type"}); return;
         }
         console.log(type)
