@@ -94,7 +94,7 @@ server.listen(API_PORT, async (err, address) =>  {
         process.exit(1)
     }
 
-    await allInvariants(InvariantTypes.numbers); // pre-fetch invariants
+    await allInvariants(InvariantTypes.any); // pre-fetch invariants
 
 
     console.log(`Server listening at ${address}`)
