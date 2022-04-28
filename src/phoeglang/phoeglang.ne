@@ -18,7 +18,7 @@ export class PhoegLangResult extends Data {
 
 main -> statement {% id %}
 
-statement -> disjonction                                {% (d) => "SELECT " + d[0] + ";" %}
+statement -> disjonction                                {% (d) => PhoegLangResult.create({constraints: d[0]}) %}
 
 disjonction -> exclusion                                {% id %}
            | disjonction _ ("OR"|"||") _ exclusion      {% (d) => d[0] + " OR " + d[4] %}
@@ -38,7 +38,7 @@ condition -> expression                         {% id %}
            | condition _ "<" _ expression       {% (d) => d[0] + "<"  + d[4] %}
            | condition _ "<=" _ expression      {% (d) => d[0] + "<=" + d[4] %}
            | condition _ ">" _ expression       {% (d) => d[0] + ">"  + d[4] %}
-           | condition _ ">=" _ expression      {% (d) => d[0] + "<=" + d[4] %}
+           | condition _ ">=" _ expression      {% (d) => d[0] + ">=" + d[4] %}
            | condition _ "==" _ expression      {% (d) => d[0] + "="  + d[4] %}
            | condition _ "!=" _ expression      {% (d) => d[0] + "<>" + d[4] %}
 
@@ -75,7 +75,7 @@ power -> power _ "^" _ NUMBER                   {% (d) => d[0] + "^" + d[4] %}
        | NUMBER                                 {% id %}
 
 NUMBER -> decimal                               {% (d) => d[0].toString() %}
-        | INVARIANT                             {% (d) => d[0].toString() + ".val" %}
+        | INVARIANT                             {% (d) => d[0].toString() + ".val" %}# {% (d) => PhoegLangResult.create({constraints: d[0].toString() + ".val", invariants: [d[0].toString()]}) %}
 
 INVARIANT -> dqstring | sqstring                {% id %}
 

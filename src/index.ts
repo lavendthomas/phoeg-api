@@ -12,7 +12,7 @@ import {allInvariants, InvariantTypes, routes as invariantsRoutes} from "./route
 import {routes as phoeglangRoutes} from "./routes/phoeglang"
 
 const server = fastify({
-    logger: {level: 'debug'},
+    logger: {level: 'debug', file: "/tmp/phoeg-react.log"},
     ajv: {
         customOptions: {
             coerceTypes: 'array'        // Accept arrays in querystrings

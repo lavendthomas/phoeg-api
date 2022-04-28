@@ -163,7 +163,7 @@ const grammar: Grammar = {
         }
         },
     {"name": "main", "symbols": ["statement"], "postprocess": id},
-    {"name": "statement", "symbols": ["disjonction"], "postprocess": (d) => "SELECT " + d[0] + ";"},
+    {"name": "statement", "symbols": ["disjonction"], "postprocess": (d) => PhoegLangResult.create({constraints: d[0]})},
     {"name": "disjonction", "symbols": ["exclusion"], "postprocess": id},
     {"name": "disjonction$subexpression$1$string$1", "symbols": [{"literal":"O"}, {"literal":"R"}], "postprocess": (d) => d.join('')},
     {"name": "disjonction$subexpression$1", "symbols": ["disjonction$subexpression$1$string$1"]},
@@ -190,7 +190,7 @@ const grammar: Grammar = {
     {"name": "condition", "symbols": ["condition", "_", "condition$string$1", "_", "expression"], "postprocess": (d) => d[0] + "<=" + d[4]},
     {"name": "condition", "symbols": ["condition", "_", {"literal":">"}, "_", "expression"], "postprocess": (d) => d[0] + ">"  + d[4]},
     {"name": "condition$string$2", "symbols": [{"literal":">"}, {"literal":"="}], "postprocess": (d) => d.join('')},
-    {"name": "condition", "symbols": ["condition", "_", "condition$string$2", "_", "expression"], "postprocess": (d) => d[0] + "<=" + d[4]},
+    {"name": "condition", "symbols": ["condition", "_", "condition$string$2", "_", "expression"], "postprocess": (d) => d[0] + ">=" + d[4]},
     {"name": "condition$string$3", "symbols": [{"literal":"="}, {"literal":"="}], "postprocess": (d) => d.join('')},
     {"name": "condition", "symbols": ["condition", "_", "condition$string$3", "_", "expression"], "postprocess": (d) => d[0] + "="  + d[4]},
     {"name": "condition$string$4", "symbols": [{"literal":"!"}, {"literal":"="}], "postprocess": (d) => d.join('')},
