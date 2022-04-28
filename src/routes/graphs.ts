@@ -2,6 +2,9 @@ import {FastifyInstance} from "fastify";
 import phoeg from "../db/phoeg";
 import {Static, StaticArray, TLiteral, TNumber, TObject, TOptional, TString, TUnion, Type} from '@sinclair/typebox';
 import {ACCEPTABLE_INVARIANTS, INVARIANTS, InvariantTypes} from "./invariants";
+import { PhoeglangBody } from "./phoeglang";
+import nearley from "nearley";
+import grammar from "../phoeglang/phoeglang";
 
 type Invariant = typeof ACCEPTABLE_INVARIANTS[number]
 
@@ -414,6 +417,10 @@ function build_points_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>,
     return raw_query
 }
 
+function build_points_phoeglang_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, constraints: string) {
+
+}
+
 function build_polytope_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, bounds?: StaticArray<TObject<{name: TString, minimum_bound: TOptional<TNumber>, maximum_bound: TOptional<TNumber>}>>): string {
     let raw_query = part1_polytope()
 
@@ -451,20 +458,7 @@ function build_polytope_query(invariants: StaticArray<TUnion<TLiteral<string>[]>
     raw_query += invariants.join(", ") // Order according to invariant order
 
     raw_query += part4_polytope(invariants[0], invariants[1])
-    /*
-    raw_query += part4()
 
-    invariants.concat(["mult"]).forEach((invariant, index) => {
-        raw_query += `    '${invariant}',array_to_json(array_agg(${invariant}))`
-        if (index < invariants.length-1) {
-            // Add , except for the last invariant
-            raw_query += ","
-        }
-        raw_query += "\n"
-    })
-    */
-
-    // raw_query += part5_polytope(invariants)
     return raw_query
 }
 
@@ -530,6 +524,33 @@ export async function routes(fastify: FastifyInstance, options: any) {
                 reply.send(results)
             }
         })
+
+    })
+
+    fastify.put<{
+        Querystring: IPolytopeQueryArgs,
+        Body: PhoeglangBody
+    }>("/points", async (request, reply) => {
+        const query_params = [request.query.order]
+
+        const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
+        
+        // Parse the constraints
+        try {
+            parser.feed(request.body.query)
+        } catch (parseError: any) {
+            console.log("Error at character " + parseError.offset); // "Error at character 9"
+            reply.code(400).send({
+                message: "Error at character " + parseError.offset,
+                parseError: parseError
+            })
+        }
+        
+        const invariants = [request.query.x_invariant, request.query.y_invariant];
+        const constraints = parser.results[0] as string
+
+        const query = build_points_phoeglang_query(invariants, constraints);
+
 
     })
 

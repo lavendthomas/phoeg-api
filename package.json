@@ -4,7 +4,7 @@
   "description": "",
   "main": "./build/index.js",
   "scripts": {
-    "prebuild": "mkdirp ./build/phoeglang && nearleyc ./src/phoeglang/phoeglang.ne -o ./build/phoeglang/phoeglang.js",
+    "prebuild": "nearleyc ./src/phoeglang/phoeglang.ne -o ./src/phoeglang/phoeglang.ts",
     "build": "tsc -p tsconfig.json",
     "postbuild": "cp ./src/queries/*.sql ./build/queries",
     "start": "node ./build/index.js",
@@ -27,7 +27,8 @@
     "pg-format": "^1.0.4",
     "qs": "^6.10.2",
     "redis": "^4.0.0",
-    "sha.js": "^2.4.11"
+    "sha.js": "^2.4.11",
+    "dataclass": "^2.0.0"
   },
   "devDependencies": {
     "mkdirp": "^1.0.4",

@@ -1,7 +1,7 @@
 import {FastifyInstance} from "fastify";
 import nearley from "nearley";
 
-const grammar = require("../phoeglang/phoeglang.js");
+import grammar from "../phoeglang/phoeglang";
 
 export interface PhoeglangBody {
     query: string;

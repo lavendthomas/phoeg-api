@@ -15,7 +15,7 @@ POST http://localhost:8080/phoeglang HTTP/1.1
 Content-Type: application/json
 
 {
-    "query": "MAX(7,6-5) < 5 AND MIN(3,4-2) > 7"
+    "query": "\"av_col\" + 5"
 }
 
 ###
@@ -33,7 +33,16 @@ POST http://localhost:8080/phoeglang HTTP/1.1
 Content-Type: application/json
 
 {
-    "query": "av_col"
+    "query": "'av_col' < 5"
+}
+
+###
+
+GET http://localhost:8080/graphs/points?order=3&x_invariant=av_col&y_invariant=num_col&colour=num_vertices HTTP/1.1
+Content-Type: application/json
+
+{
+    "query": "'num_col' < 3"
 }
 
 ###
