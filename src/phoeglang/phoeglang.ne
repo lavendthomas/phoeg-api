@@ -45,16 +45,21 @@ condition -> expression                                 {% id %}
 parenthesed_expression -> "(" _ expression _ ")"        {% (d) => "(" + d[2] + ")" %}
 
 expression -> term                                      {% id %}
-            | "MAX" _ parenthesed_term                  {% (d) => "GREATEST" + d[2] %}
-            | "MIN" _ parenthesed_term                  {% (d) => "LEAST" + d[2] %}
-            | "SUM" _ parenthesed_term                  {% (d) => "SUM" + d[2] %}
-            | "AVG" _ parenthesed_term                  {% (d) => "AVG" + d[2] %}
-            | "MEAN" _ parenthesed_term                 {% (d) => "MEAN" + d[2] %}
+            | "MAX" _ parenthesed_term_list             {% (d) => "GREATEST" + d[2] %}
+            | "MIN" _ parenthesed_term_list             {% (d) => "LEAST" + d[2] %}
+            | "SUM" _ parenthesed_term_list             {% (d) => "SUM" + d[2] %}
+            | "AVG" _ parenthesed_term_list             {% (d) => "AVG" + d[2] %}
+            | "MEAN" _ parenthesed_term_list            {% (d) => "MEAN" + d[2] %}
             | "FLOOR" _ parenthesed_term                {% (d) => "FLOOR" + d[2] %}
             | "CEIL" _ parenthesed_term                 {% (d) => "CEIL" + d[2] %}
             | "ROUND" _ parenthesed_term                {% (d) => "ROUND" + d[2] %}
 
 parenthesed_term -> "(" _ term _ ")"                    {% (d) => "(" + d[2] + ")" %}
+
+parenthesed_term_list -> "(" _ term_list _ ")"          {% (d) => "(" + d[2] + ")" %}
+
+term_list -> term                                       {% id %}
+          | term_list _ "," _ term                      {% (d) => d[0] + ", " + d[4] %}
 
 arithmetic_expression -> term                           {% id %}
 
