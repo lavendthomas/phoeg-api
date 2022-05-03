@@ -241,8 +241,10 @@ const grammar: Grammar = {
     {"name": "number", "symbols": ["decimal"], "postprocess": (d) => d[0].toString()},
     {"name": "number", "symbols": ["invariant"], "postprocess": (d) => d[0].toString() + ".val"},
     {"name": "number", "symbols": ["parenthesed_expression"], "postprocess": id},
-    {"name": "invariant", "symbols": ["dqstring"]},
-    {"name": "invariant", "symbols": ["sqstring"], "postprocess": id}
+    {"name": "invariant$ebnf$1", "symbols": ["invariant_char"]},
+    {"name": "invariant$ebnf$1", "symbols": ["invariant$ebnf$1", "invariant_char"], "postprocess": (d) => d[0].concat([d[1]])},
+    {"name": "invariant", "symbols": ["invariant$ebnf$1"], "postprocess": (d) => d[0].join("")},
+    {"name": "invariant_char", "symbols": [/[_a-z]/], "postprocess": id}
   ],
   ParserStart: "main",
 };

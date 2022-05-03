@@ -81,5 +81,7 @@ number -> decimal                                       {% (d) => d[0].toString(
         | invariant                                     {% (d) => d[0].toString() + ".val" %}# {% (d) => PhoegLangResult.create({constraints: d[0].toString() + ".val", invariants: [d[0].toString()]}) %}
         | parenthesed_expression                        {% id %}
 
-invariant -> dqstring | sqstring                        {% id %}
+invariant -> invariant_char:+                           {% (d) => d[0].join("") %}
+
+invariant_char -> [_a-z]                                {% id %}
 
