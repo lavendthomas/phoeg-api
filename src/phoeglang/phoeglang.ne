@@ -31,7 +31,8 @@ conjonction -> negation                                 {% id %}
              | conjonction _ ("AND"|"&&") _ negation    {% (d) => d[0] + " AND " + d[4] %}
 
 negation -> condition                                   {% id %}
-          | ("NOT"|"!") _ condition                     {% (d) => "NOT " + d[2] %}
+          | ("NOT"|"!") _ condition                     {% (d) => "NOT (" + d[2] + ")" %}
+          | ("NOT"|"!") _ "(" _ condition _ ")"         {% (d) => "NOT (" + d[4] + ")" %}
 
 
 condition -> expression                                 {% id %}
