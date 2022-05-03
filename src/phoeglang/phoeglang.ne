@@ -21,14 +21,14 @@ main -> statement                                       {% id %}
 statement -> disjonction                                {% (d) => PhoegLangResult.create({constraints: d[0]}) %}
 
 disjonction -> exclusion                                {% id %}
-           | disjonction _ ("OR"|"||") _ exclusion      {% (d) => d[0] + " OR " + d[4] %}
+           | disjonction _ ("OR"|"||") _ exclusion      {% (d) => "(" + d[0] + ")" + " OR " + "(" + d[4] + ")" %}
 
 exclusion -> conjonction                                {% id %}
-          | exclusion "XOR" conjonction                 {% (d) => d[0] + " XOR " + d[4] %}
+          | exclusion "XOR" conjonction                 {% (d) => "(" + d[0] + ")" + " XOR " + "(" + d[4] + ")" %}
 
 
 conjonction -> negation                                 {% id %}
-             | conjonction _ ("AND"|"&&") _ negation    {% (d) => d[0] + " AND " + d[4] %}
+             | conjonction _ ("AND"|"&&") _ negation    {% (d) => "(" + d[0] + ")" + " AND " + "(" + d[4] + ")" %}
 
 negation -> condition                                   {% id %}
           | ("NOT"|"!") _ condition                     {% (d) => "NOT (" + d[2] + ")" %}
@@ -36,12 +36,12 @@ negation -> condition                                   {% id %}
 
 
 condition -> expression                                 {% id %}
-           | condition _ "<" _ expression               {% (d) => d[0] + "<"  + d[4] %}
-           | condition _ "<=" _ expression              {% (d) => d[0] + "<=" + d[4] %}
-           | condition _ ">" _ expression               {% (d) => d[0] + ">"  + d[4] %}
-           | condition _ ">=" _ expression              {% (d) => d[0] + ">=" + d[4] %}
-           | condition _ "==" _ expression              {% (d) => d[0] + "="  + d[4] %}
-           | condition _ "!=" _ expression              {% (d) => d[0] + "<>" + d[4] %}
+           | condition _ "<" _ expression               {% (d) => "(" + d[0] + ")" + "<"  + "(" + d[4] + ")" %}
+           | condition _ "<=" _ expression              {% (d) => "(" + d[0] + ")" + "<=" + "(" + d[4] + ")" %}
+           | condition _ ">" _ expression               {% (d) => "(" + d[0] + ")" + ">"  + "(" + d[4] + ")" %}
+           | condition _ ">=" _ expression              {% (d) => "(" + d[0] + ")" + ">=" + "(" + d[4] + ")" %}
+           | condition _ ("="|"==") _ expression        {% (d) => "(" + d[0] + ")" + "="  + "(" + d[4] + ")" %}
+           | condition _ ("!="|"<>") _ expression       {% (d) => "(" + d[0] + ")" + "<>" + "(" + d[4] + ")" %}
 
 parenthesed_expression -> "(" _ expression _ ")"        {% (d) => "(" + d[2] + ")" %}
 
