@@ -46,17 +46,18 @@ export type IInvariantsQueryArgs = Static<typeof InvariantsQueryArgs>;
 
 export let ACCEPTABLE_INVARIANTS: string[] = []
 
+
 export let INVARIANTS: Invariant[] = []
 
-export async function allInvariants(type: InvariantTypes = InvariantTypes.any): Promise<string[]> {
+export async function allInvariants(type: InvariantTypes = InvariantTypes.any): Promise<Invariant[]> {
     // Cache the result in a variable
     return fetchInvariants(type).then((i: Invariant[]) => {
         const allInvariants = i.map((invariant: Invariant) => invariant.tablename)
         if (type == InvariantTypes.any) {
-            ACCEPTABLE_INVARIANTS = allInvariants
+            ACCEPTABLE_INVARIANTS = allInvariants.map((invariant: any) => invariant.tablename)
             INVARIANTS = i
         }
-        return allInvariants
+        return i
     });
 }
 
