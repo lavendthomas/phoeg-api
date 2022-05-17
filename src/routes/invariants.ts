@@ -46,7 +46,6 @@ export type IInvariantsQueryArgs = Static<typeof InvariantsQueryArgs>;
 
 export let ACCEPTABLE_INVARIANTS: string[] = []
 
-
 export let INVARIANTS: Invariant[] = []
 
 export async function allInvariants(type: InvariantTypes = InvariantTypes.any): Promise<Invariant[]> {

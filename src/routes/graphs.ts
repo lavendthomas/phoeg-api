@@ -1,4 +1,4 @@
-import {FastifyInstance} from "fastify";
+import fastify, {FastifyInstance} from "fastify";
 import phoeg from "../db/phoeg";
 import {Static, StaticArray, TLiteral, TNumber, TObject, TOptional, TString, TUnion, Type} from '@sinclair/typebox';
 import {ACCEPTABLE_INVARIANTS, INVARIANTS, InvariantTypes} from "./invariants";
@@ -301,7 +301,7 @@ function condition(invariant_name: string, min_bound?: number, max_bound?: numbe
         return ''
     }
     let raw_query = ""
-    if (INVARIANTS.filter(i => i.name === invariant_name)[0].datatype === InvariantTypes.booleans) {
+    if (INVARIANTS.filter(i => i.tablename === invariant_name)[0].datatype === InvariantTypes.booleans) {
         if (min_bound === 0 && max_bound === 0) {
             raw_query = `    AND ${invariant_name}.val = false\n`
         } else if (min_bound === 1 && max_bound === 1) {
