@@ -302,9 +302,9 @@ function condition(invariant_name: string, min_bound?: number, max_bound?: numbe
     }
     let raw_query = ""
     if (INVARIANTS.filter(i => i.tablename === invariant_name)[0].datatype === InvariantTypes.booleans) {
-        if (min_bound === 0 && max_bound === 0) {
+        if (min_bound == 0 && max_bound == 0) {
             raw_query = `    AND ${invariant_name}.val = false\n`
-        } else if (min_bound === 1 && max_bound === 1) {
+        } else if (min_bound == 1 && max_bound == 1) {
             raw_query = `    AND ${invariant_name}.val = true\n`
         } else {
             console.warn("Boolean invariant with non-zero min/max bounds not supported")
@@ -339,10 +339,8 @@ function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, 
 
     // Filter
     if (constraints) {
-
-        
-
         constraints.forEach((cst) => {
+            console.log("CST: " + JSON.stringify(cst))
             raw_query += condition(cst.name, cst.minimum_bound, cst.maximum_bound)
             // raw_query += `    AND ${cst.name}.val > ${cst.minimum_bound}\n`
             // raw_query += `    AND ${cst.name}.val < ${cst.maximum_bound}\n`
