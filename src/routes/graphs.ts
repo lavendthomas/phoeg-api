@@ -340,7 +340,6 @@ function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, 
     // Filter
     if (constraints) {
         constraints.forEach((cst) => {
-            console.log("CST: " + JSON.stringify(cst))
             raw_query += condition(cst.name, cst.minimum_bound, cst.maximum_bound)
             // raw_query += `    AND ${cst.name}.val > ${cst.minimum_bound}\n`
             // raw_query += `    AND ${cst.name}.val < ${cst.maximum_bound}\n`
