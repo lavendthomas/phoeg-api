@@ -10,7 +10,7 @@
     "start": "node ./build/index.js",
     "dev": "ts-node-dev --respawn ./src/index.ts",
     "lint": "eslint . --ext .ts,.tsx",
-    "test": "tap --reporter=list --watch"
+    "test": "tap --node-arg=--require=ts-node/register"
   },
   "keywords": [],
   "author": "",
