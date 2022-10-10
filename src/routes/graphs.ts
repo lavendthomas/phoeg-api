@@ -650,6 +650,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
       const query = build_points_query(invariants, request.query.constraints);
 
       fastify.log.debug("Query: " + query);
+      console.debug("Query: " + query);
 
       await phoeg.cached_query(query, query_params, async (error, result) => {
         if (error) {
@@ -690,7 +691,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
     const query = build_points_phoeglang_query(invariants, constraints);
 
     fastify.log.debug("Query: " + query);
-    console.debug("Query: " + query);
+    console.log("Query: " + query);
 
     await phoeg.cached_query(query, query_params, async (error, result) => {
       if (error) {
@@ -724,6 +725,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
       const query = build_polytope_query(invariants, request.query.constraints);
 
       fastify.log.debug("Query: " + query);
+      console.log("Query: " + query);
 
       await phoeg.cached_query(query, query_params, async (error, result) => {
         if (error) {

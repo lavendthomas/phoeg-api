@@ -64,7 +64,7 @@ export async function allInvariants(
         (invariant: any) => invariant.tablename
       );
       INVARIANTS = i;
-    }
+    } 
     return i;
   });
 }
@@ -138,7 +138,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
         reply.code(400).send({ reason: "Please enter a valid type" });
         return;
     }
-    console.log(type);
+    fastify.log.info(type);
     reply.code(200).send(await allInvariants(type));
   });
 }

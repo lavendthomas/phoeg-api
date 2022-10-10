@@ -11,7 +11,10 @@ import { routes as graphsRoutes } from "./routes/graphs";
 
 export function buildServer(): FastifyInstance {
   const server = fastify({
-    logger: { level: "debug" }, //, file: "/tmp/phoeg-react.log"},
+    logger: { 
+      level: "debug",
+      // file: "/tmp/phoeg-api.log"
+    },
     ajv: {
       customOptions: {
         coerceTypes: "array", // Accept arrays in querystrings
