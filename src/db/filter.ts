@@ -1,14 +1,11 @@
-import {IPointsQueryResults} from "../routes/points";
+import { IPointsQueryResults } from "../routes/points";
 
 abstract class Filter {
-
-    abstract filter(data: IPointsQueryResults): IPointsQueryResults;
-
+  abstract filter(data: IPointsQueryResults): IPointsQueryResults;
 }
 
 export class IdentityFilter extends Filter {
-
-    filter(data: IPointsQueryResults): IPointsQueryResults {
-        return data;
-    }
+  filter(data: IPointsQueryResults): IPointsQueryResults {
+    return data;
+  }
 }

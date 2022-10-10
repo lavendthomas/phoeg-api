@@ -1,246 +1,274 @@
-import fastify, {FastifyInstance} from "fastify";
+import fastify, { FastifyInstance } from "fastify";
 import phoeg from "../db/phoeg";
-import {Static, StaticArray, TLiteral, TNumber, TObject, TOptional, TString, TUnion, Type} from '@sinclair/typebox';
-import {ACCEPTABLE_INVARIANTS, INVARIANTS, InvariantTypes} from "./invariants";
+import {
+  Static,
+  StaticArray,
+  TLiteral,
+  TNumber,
+  TObject,
+  TOptional,
+  TString,
+  TUnion,
+  Type,
+} from "@sinclair/typebox";
+import {
+  ACCEPTABLE_INVARIANTS,
+  INVARIANTS,
+  InvariantTypes,
+} from "./invariants";
 import { PhoeglangBody } from "./phoeglang";
 import nearley from "nearley";
 import grammar, { PhoegLangResult } from "../phoeglang/phoeglang";
 import { assert } from "console";
 
-type Invariant = typeof ACCEPTABLE_INVARIANTS[number]
+type Invariant = typeof ACCEPTABLE_INVARIANTS[number];
 
 type InvariantConstraint = {
-    name: Invariant
-    minimum_bound: number
-    maximum_bound: number
-}
+  name: Invariant;
+  minimum_bound: number;
+  maximum_bound: number;
+};
 
-type InvariantConstraints = InvariantConstraint[]
-
+type InvariantConstraints = InvariantConstraint[];
 
 /**
  * Return a JSON Schema definition
  */
 export function phoegDefinitions(): any {
-    return {
-        "definitions": {
-            "invariants": {
-                "type": "string",
-                "enum": ACCEPTABLE_INVARIANTS
-            }
-        }
-    }
+  return {
+    definitions: {
+      invariants: {
+        type: "string",
+        enum: ACCEPTABLE_INVARIANTS,
+      },
+    },
+  };
 }
 
 export function graphQueryArgsFn() {
-    return {
-        "type": "object",
-        "title": "Phoeg Request",
-        "properties": {
-            "order": {
-                "minimum": 1,
-                "maximum": 10,
-                "default": 8,
-                "title": "Graph Order",
-                "description": "This setting affects the number of vertices of the graphs that are displayed in the polytope.",
-                "type": "integer"
+  return {
+    type: "object",
+    title: "Phoeg Request",
+    properties: {
+      order: {
+        minimum: 1,
+        maximum: 10,
+        default: 8,
+        title: "Graph Order",
+        description:
+          "This setting affects the number of vertices of the graphs that are displayed in the polytope.",
+        type: "integer",
+      },
+      x_invariant: {
+        title: "Invariant on the X axis",
+        description: "The invariant to use for the x-axis.",
+        type: "string",
+        enum: ACCEPTABLE_INVARIANTS,
+        default: "av_col",
+      },
+      y_invariant: {
+        title: "Invariant on the Y axis",
+        description: "The invariant to use for the y-axis.",
+        type: "string",
+        enum: ACCEPTABLE_INVARIANTS,
+        default: "num_col",
+      },
+      add_colouring: {
+        title: "Add colouring?",
+        description:
+          "The invariant selected in the following box will be used to colour the points in the graph.",
+        $ref: "#/definitions/colour",
+      },
+      constraints: {
+        title: "Constraints",
+        description: "Add additional constraints to the query.",
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            name: {
+              description: "The invariant to use for the constraint.",
+              title: "Invariant",
+              type: "string",
+              enum: ACCEPTABLE_INVARIANTS,
             },
-            "x_invariant": {
-                "title": "Invariant on the X axis",
-                "description": "The invariant to use for the x-axis.",
-                "type": "string",
-                "enum": ACCEPTABLE_INVARIANTS,
-                "default": "av_col"
+            minimum_bound: {
+              title: "Minimum Bound",
+              type: "number",
             },
-            "y_invariant": {
-                "title": "Invariant on the Y axis",
-                "description": "The invariant to use for the y-axis.",
-                "type": "string",
-                "enum": ACCEPTABLE_INVARIANTS,
-                "default": "num_col"
+            maximum_bound: {
+              title: "Maximum Bound",
+              type: "number",
             },
-            "add_colouring": {
-                "title": "Add colouring?",
-                "description": "The invariant selected in the following box will be used to colour the points in the graph.",
-                "$ref": "#/definitions/colour"
-            },
-            "constraints": {
-                "title": "Constraints",
-                "description": "Add additional constraints to the query.",
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "name": {
-                            "description": "The invariant to use for the constraint.",
-                            "title": "Invariant",
-                            "type": "string",
-                            "enum": ACCEPTABLE_INVARIANTS,
-                        },
-                        "minimum_bound": {
-                            "title": "Minimum Bound",
-                            "type": "number"
-                        },
-                        "maximum_bound": {
-                            "title": "Maximum Bound",
-                            "type": "number"
-                        }
-                    }
-                }
-            }
+          },
         },
-        "required": ["order", "x_invariant", "y_invariant", "add_colouring"],
-        "definitions":  {
-            "colour": {
-                "title": "colour",
-                "type": "object",
-                "properties": {
-                    "Add colouring?": {
-                        "type": "string",
-                        "enum": [
-                            "No",
-                            "Yes",
-                        ],
-                        "default": "No"
-                    }
+      },
+    },
+    required: ["order", "x_invariant", "y_invariant", "add_colouring"],
+    definitions: {
+      colour: {
+        title: "colour",
+        type: "object",
+        properties: {
+          "Add colouring?": {
+            type: "string",
+            enum: ["No", "Yes"],
+            default: "No",
+          },
+        },
+        required: ["Add colouring?"],
+        dependencies: {
+          "Add colouring?": {
+            oneOf: [
+              {
+                properties: {
+                  "Add colouring?": {
+                    enum: ["No"],
+                  },
                 },
-                "required": [
-                    "Add colouring?"
-                ],
-                "dependencies": {
-                    "Add colouring?": {
-                        "oneOf": [
-                            {
-                                "properties": {
-                                    "Add colouring?": {
-                                        "enum": [
-                                            "No"
-                                        ]
-                                    }
-                                }
-                            },
-                            {
-                                "properties": {
-                                    "Add colouring?": {
-                                        "enum": [
-                                            "Yes"
-                                        ]
-                                    },
-                                    "The invariant to use for the colouring.": {
-                                        "type": "string",
-                                        "enum": ACCEPTABLE_INVARIANTS,
-                                        "default": ACCEPTABLE_INVARIANTS[2]
-                                    }
-                                },
-                                "required": [
-                                    "The invariant to use for the colouring."
-                                ]
-                            },
-                        ]
-                    }
-                }
-            }
-        }
-    }
+              },
+              {
+                properties: {
+                  "Add colouring?": {
+                    enum: ["Yes"],
+                  },
+                  "The invariant to use for the colouring.": {
+                    type: "string",
+                    enum: ACCEPTABLE_INVARIANTS,
+                    default: ACCEPTABLE_INVARIANTS[2],
+                  },
+                },
+                required: ["The invariant to use for the colouring."],
+              },
+            ],
+          },
+        },
+      },
+    },
+  };
 }
 
 export const polytopeQueryArgs = Type.Object({
-    order: Type.Integer({
-        minimum: 1, maximum: 10, default: 8,
-        description: "Maximum size of the graphs."}),
-    x_invariant: Type.String({
-        pattern: ACCEPTABLE_INVARIANTS.join("|"),
-        examples: ACCEPTABLE_INVARIANTS,
-        title: "X Invariant Name"
-    }),
-    y_invariant: Type.String({
-        pattern: ACCEPTABLE_INVARIANTS.join("|"),
-        examples: ACCEPTABLE_INVARIANTS,
-        title: "Y Invariant Name"
-    }),
-    colour: Type.Optional(Type.String({
-        pattern: ACCEPTABLE_INVARIANTS.join("|"),
-        examples: ACCEPTABLE_INVARIANTS,
-        title: "Colour Invariant Name"
-    })),
-    constraints: Type.Optional(Type.Array(Type.Object({
+  order: Type.Integer({
+    minimum: 1,
+    maximum: 10,
+    default: 8,
+    description: "Maximum size of the graphs.",
+  }),
+  x_invariant: Type.String({
+    pattern: ACCEPTABLE_INVARIANTS.join("|"),
+    examples: ACCEPTABLE_INVARIANTS,
+    title: "X Invariant Name",
+  }),
+  y_invariant: Type.String({
+    pattern: ACCEPTABLE_INVARIANTS.join("|"),
+    examples: ACCEPTABLE_INVARIANTS,
+    title: "Y Invariant Name",
+  }),
+  colour: Type.Optional(
+    Type.String({
+      pattern: ACCEPTABLE_INVARIANTS.join("|"),
+      examples: ACCEPTABLE_INVARIANTS,
+      title: "Colour Invariant Name",
+    })
+  ),
+  constraints: Type.Optional(
+    Type.Array(
+      Type.Object({
         name: Type.String({
-            pattern: ACCEPTABLE_INVARIANTS.join("|"),
-            examples: ACCEPTABLE_INVARIANTS,
-            title: "Invariant Name"
+          pattern: ACCEPTABLE_INVARIANTS.join("|"),
+          examples: ACCEPTABLE_INVARIANTS,
+          title: "Invariant Name",
         }),
-        minimum_bound: Type.Optional(Type.Number({title: "Minimum Bound"})),
-        maximum_bound: Type.Optional(Type.Number({title: "Maximum Bound"})),
-    }), {description: "Name of each invariant to analyse. The first two will be used on the axis. Acceptable values are: " + ACCEPTABLE_INVARIANTS.join(", ") + "."})),
-})
+        minimum_bound: Type.Optional(Type.Number({ title: "Minimum Bound" })),
+        maximum_bound: Type.Optional(Type.Number({ title: "Maximum Bound" })),
+      }),
+      {
+        description:
+          "Name of each invariant to analyse. The first two will be used on the axis. Acceptable values are: " +
+          ACCEPTABLE_INVARIANTS.join(", ") +
+          ".",
+      }
+    )
+  ),
+});
 
 export const graphsQueryArgs = Type.Object({
-    order: Type.Integer({
-        minimum: 1, maximum: 10, default: 8,
-        description: "Maximum size of the graphs."}),
-    invariants: Type.Array(Type.Object({
-        name: Type.String({
-            pattern: ACCEPTABLE_INVARIANTS.join("|"),
-            examples: ACCEPTABLE_INVARIANTS,
-            title: "Invariant Name"
-        }),
-        minimum_bound: Type.Optional(Type.Number({title: "Minimum Bound"})),
-        maximum_bound: Type.Optional(Type.Number({title: "Maximum Bound"})),
-    }), {description: "Name of each invariant to analyse. The first two will be used on the axis. Acceptable values are: " + ACCEPTABLE_INVARIANTS.join(", ") + "."})
-})
+  order: Type.Integer({
+    minimum: 1,
+    maximum: 10,
+    default: 8,
+    description: "Maximum size of the graphs.",
+  }),
+  invariants: Type.Array(
+    Type.Object({
+      name: Type.String({
+        pattern: ACCEPTABLE_INVARIANTS.join("|"),
+        examples: ACCEPTABLE_INVARIANTS,
+        title: "Invariant Name",
+      }),
+      minimum_bound: Type.Optional(Type.Number({ title: "Minimum Bound" })),
+      maximum_bound: Type.Optional(Type.Number({ title: "Maximum Bound" })),
+    }),
+    {
+      description:
+        "Name of each invariant to analyse. The first two will be used on the axis. Acceptable values are: " +
+        ACCEPTABLE_INVARIANTS.join(", ") +
+        ".",
+    }
+  ),
+});
 
 export type IGraphsQueryArgs = Static<typeof graphsQueryArgs>;
 export type IPolytopeQueryArgs = Static<typeof polytopeQueryArgs>;
 
-
 interface IGraphsQueryResults {
-    sig: string[],
-    m: number[],
-    invariant: number[],
-    chi: number[]
+  sig: string[];
+  m: number[];
+  invariant: number[];
+  chi: number[];
 }
 
-
 function part1(): string {
-    return `WITH data AS (
+  return `WITH data AS (
 SELECT
-    n.signature AS sig,\n`
+    n.signature AS sig,\n`;
 }
 
 function part1_points(): string {
-    return `WITH data AS (
+  return `WITH data AS (
 SELECT
-    COUNT(*) as mult,\n`
+    COUNT(*) as mult,\n`;
 }
 
 function part1_polytope(): string {
-    return `WITH data AS (
-SELECT\n`
+  return `WITH data AS (
+SELECT\n`;
 }
 
 function part2(): string {
-    return `    FROM num_vertices n\n`
+  return `    FROM num_vertices n\n`;
 }
 
 function part3(): string {
-    return `    WHERE n.val = $1\n`
+  return `    WHERE n.val = $1\n`;
 }
 
 function part4(): string {
-    return `
+  return `
 )
 SELECT json_build_object(
-    'sig',array_to_json(array_agg(sig)),\n`
+    'sig',array_to_json(array_agg(sig)),\n`;
 }
 
 function part4_points(): string {
-    return `
+  return `
 )
-SELECT json_build_object(\n`
+SELECT json_build_object(\n`;
 }
 
 function part4_polytope(invariant1: string, invariant2: string): string {
-    return `
+  return `
 ),
 polytable as (
     -- Build the convex hull and output it as json
@@ -282,231 +310,282 @@ select json_build_object('type', tp::json, 'coordinates', (
     ))
 from formatted
 group by tp;
-`
+`;
 }
 
 function part5(): string {
-    return `)
-FROM data;`
+  return `)
+FROM data;`;
 }
 
 function part5_polytope(invariants: string[]): string {
-    return `)
-SELECT ST_AsText(ST_ConvexHull(ST_Collect(ST_Point(${invariants.join(",")})))) FROM data;`
+  return `)
+SELECT ST_AsText(ST_ConvexHull(ST_Collect(ST_Point(${invariants.join(
+    ","
+  )})))) FROM data;`;
 }
 
-
-function condition(invariant_name: string, min_bound?: number, max_bound?: number): string {
-    if (min_bound === undefined && max_bound === undefined) {
-        return ''
-    }
-    let raw_query = ""
-    if (INVARIANTS.filter(i => i.tablename === invariant_name)[0].datatype === InvariantTypes.booleans) {
-        if (min_bound == 0 && max_bound == 0) {
-            raw_query = `    AND ${invariant_name}.val = false\n`
-        } else if (min_bound == 1 && max_bound == 1) {
-            raw_query = `    AND ${invariant_name}.val = true\n`
-        } else {
-            console.warn("Boolean invariant with non-zero min/max bounds not supported")
-        }
+function condition(
+  invariant_name: string,
+  min_bound?: number,
+  max_bound?: number
+): string {
+  if (min_bound === undefined && max_bound === undefined) {
+    return "";
+  }
+  let raw_query = "";
+  if (
+    INVARIANTS.filter((i) => i.tablename === invariant_name)[0].datatype ===
+    InvariantTypes.booleans
+  ) {
+    if (min_bound == 0 && max_bound == 0) {
+      raw_query = `    AND ${invariant_name}.val = false\n`;
+    } else if (min_bound == 1 && max_bound == 1) {
+      raw_query = `    AND ${invariant_name}.val = true\n`;
     } else {
-        raw_query += `    AND ${invariant_name}.val >= ${min_bound}\n`
-        raw_query += `    AND ${invariant_name}.val <= ${max_bound}\n`
+      console.warn(
+        "Boolean invariant with non-zero min/max bounds not supported"
+      );
     }
-    return raw_query
+  } else {
+    raw_query += `    AND ${invariant_name}.val >= ${min_bound}\n`;
+    raw_query += `    AND ${invariant_name}.val <= ${max_bound}\n`;
+  }
+  return raw_query;
 }
 
-function build_graph_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, constraints: InvariantConstraints): string {
-    let raw_query = part1()
+function build_graph_query(
+  invariants: StaticArray<TUnion<TLiteral<string>[]>>,
+  constraints: InvariantConstraints
+): string {
+  let raw_query = part1();
 
-    invariants.forEach((invariant, index) => {
-        raw_query += `    ${invariant}.val AS ${invariant}`
-        if (index < invariants.length-1) {
-            raw_query += ","
-        }
-        raw_query += "\n"
-    })
-
-    raw_query += `    FROM num_vertices n\n`
-
-    const all_invariant_names = constraints ? [...new Set(invariants.concat(constraints.map((c) => c.name)))] : invariants // Unique on the name of invariants
-
-    all_invariant_names.forEach((invariant, index) => {
-        raw_query += `    JOIN ${invariant} ${invariant} USING(signature)\n`
-    })
-
-    raw_query += part3()
-
-    // Filter
-    if (constraints) {
-        constraints.forEach((cst) => {
-            raw_query += condition(cst.name, cst.minimum_bound, cst.maximum_bound)
-            // raw_query += `    AND ${cst.name}.val > ${cst.minimum_bound}\n`
-            // raw_query += `    AND ${cst.name}.val < ${cst.maximum_bound}\n`
-        })
+  invariants.forEach((invariant, index) => {
+    raw_query += `    ${invariant}.val AS ${invariant}`;
+    if (index < invariants.length - 1) {
+      raw_query += ",";
     }
+    raw_query += "\n";
+  });
 
+  raw_query += `    FROM num_vertices n\n`;
 
-    raw_query += '    ORDER BY '
-    raw_query += invariants.join(", ") // Order according to invariant order
+  const all_invariant_names = constraints
+    ? [...new Set(invariants.concat(constraints.map((c) => c.name)))]
+    : invariants; // Unique on the name of invariants
 
-    raw_query += part4()
+  all_invariant_names.forEach((invariant, index) => {
+    raw_query += `    JOIN ${invariant} ${invariant} USING(signature)\n`;
+  });
 
-    invariants.forEach((invariant, index) => {
-        raw_query += `    '${invariant}',array_to_json(array_agg(${invariant}))`
-        if (index < invariants.length-1) {
-            // Add , except for the last invariant
-            raw_query += ","
-        }
-        raw_query += "\n"
-    })
+  raw_query += part3();
 
-    raw_query += part5()
-    return raw_query
+  // Filter
+  if (constraints) {
+    constraints.forEach((cst) => {
+      raw_query += condition(cst.name, cst.minimum_bound, cst.maximum_bound);
+      // raw_query += `    AND ${cst.name}.val > ${cst.minimum_bound}\n`
+      // raw_query += `    AND ${cst.name}.val < ${cst.maximum_bound}\n`
+    });
+  }
+
+  raw_query += "    ORDER BY ";
+  raw_query += invariants.join(", "); // Order according to invariant order
+
+  raw_query += part4();
+
+  invariants.forEach((invariant, index) => {
+    raw_query += `    '${invariant}',array_to_json(array_agg(${invariant}))`;
+    if (index < invariants.length - 1) {
+      // Add , except for the last invariant
+      raw_query += ",";
+    }
+    raw_query += "\n";
+  });
+
+  raw_query += part5();
+  return raw_query;
 }
 
-function build_points_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, bounds?: StaticArray<TObject<{name: TString, minimum_bound: TOptional<TNumber>, maximum_bound: TOptional<TNumber>}>>): string {
-    let raw_query = part1_points()
+function build_points_query(
+  invariants: StaticArray<TUnion<TLiteral<string>[]>>,
+  bounds?: StaticArray<
+    TObject<{
+      name: TString;
+      minimum_bound: TOptional<TNumber>;
+      maximum_bound: TOptional<TNumber>;
+    }>
+  >
+): string {
+  let raw_query = part1_points();
 
-    invariants.forEach((invariant, index) => {
-        raw_query += `    ${invariant}.val AS ${invariant}`
-        if (index < invariants.length-1) {
-            raw_query += ","
-        }
-        raw_query += "\n"
-    })
+  invariants.forEach((invariant, index) => {
+    raw_query += `    ${invariant}.val AS ${invariant}`;
+    if (index < invariants.length - 1) {
+      raw_query += ",";
+    }
+    raw_query += "\n";
+  });
 
-    raw_query += part2()
+  raw_query += part2();
 
-    const all_invariant_names = bounds ? [...new Set(invariants.concat(bounds.map((c) => c.name)))] : invariants// Unique on the name of invariants
+  const all_invariant_names = bounds
+    ? [...new Set(invariants.concat(bounds.map((c) => c.name)))]
+    : invariants; // Unique on the name of invariants
 
-    all_invariant_names.forEach((invariant, index) => {
-        raw_query += `    JOIN ${invariant} ${invariant} USING(signature)\n`
-    })
+  all_invariant_names.forEach((invariant, index) => {
+    raw_query += `    JOIN ${invariant} ${invariant} USING(signature)\n`;
+  });
 
-    raw_query += part3()
+  raw_query += part3();
 
-    // Filter
-    if (bounds) bounds.forEach((bound) => {
-        raw_query += condition(bound.name, bound.minimum_bound, bound.maximum_bound)
-        // raw_query += `    AND ${bound.name}.val >= ${bound.minimum_bound}\n`
-        // raw_query += `    AND ${bound.name}.val <= ${bound.maximum_bound}\n`
-    })
+  // Filter
+  if (bounds)
+    bounds.forEach((bound) => {
+      raw_query += condition(
+        bound.name,
+        bound.minimum_bound,
+        bound.maximum_bound
+      );
+      // raw_query += `    AND ${bound.name}.val >= ${bound.minimum_bound}\n`
+      // raw_query += `    AND ${bound.name}.val <= ${bound.maximum_bound}\n`
+    });
 
-    raw_query += '    GROUP BY '
-    raw_query += invariants.join(", ") // Order according to invariant order
-    raw_query += "\n"
+  raw_query += "    GROUP BY ";
+  raw_query += invariants.join(", "); // Order according to invariant order
+  raw_query += "\n";
 
-    raw_query += '    ORDER BY '
-    raw_query += invariants.join(", ") // Order according to invariant order
+  raw_query += "    ORDER BY ";
+  raw_query += invariants.join(", "); // Order according to invariant order
 
-    raw_query += part4_points()
+  raw_query += part4_points();
 
-    invariants.concat(["mult"]).forEach((invariant, index) => {
-        raw_query += `    '${invariant}',array_to_json(array_agg(${invariant}))`
-        if (index < invariants.length) {
-            // Add , except for the last invariant
-            raw_query += ","
-        }
-        raw_query += "\n"
-    })
+  invariants.concat(["mult"]).forEach((invariant, index) => {
+    raw_query += `    '${invariant}',array_to_json(array_agg(${invariant}))`;
+    if (index < invariants.length) {
+      // Add , except for the last invariant
+      raw_query += ",";
+    }
+    raw_query += "\n";
+  });
 
-    raw_query += part5()
-    return raw_query
+  raw_query += part5();
+  return raw_query;
 }
 
-function build_points_phoeglang_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, constraints: PhoegLangResult) {
-    let raw_query = part1_points()
+function build_points_phoeglang_query(
+  invariants: StaticArray<TUnion<TLiteral<string>[]>>,
+  constraints: PhoegLangResult
+) {
+  let raw_query = part1_points();
 
-    invariants.forEach((invariant, index) => {
-        raw_query += `    ${invariant}.val AS ${invariant}`
-        if (index < invariants.length-1) {
-            raw_query += ","
-        }
-        raw_query += "\n"
-    })
+  invariants.forEach((invariant, index) => {
+    raw_query += `    ${invariant}.val AS ${invariant}`;
+    if (index < invariants.length - 1) {
+      raw_query += ",";
+    }
+    raw_query += "\n";
+  });
 
-    // Make sure that all invariants exist in the constraints
-    constraints.invariants.forEach((invariant) => {
-        assert (invariants.includes(invariant), `Invariant ${invariant} not found in the invariants`)
-    })
+  // Make sure that all invariants exist in the constraints
+  constraints.invariants.forEach((invariant) => {
+    assert(
+      invariants.includes(invariant),
+      `Invariant ${invariant} not found in the invariants`
+    );
+  });
 
-    raw_query += part2()
+  raw_query += part2();
 
-    const all_invariant_names = [...new Set(invariants.concat(constraints.invariants))] // Unique on the name of invariants
+  const all_invariant_names = [
+    ...new Set(invariants.concat(constraints.invariants)),
+  ]; // Unique on the name of invariants
 
-    all_invariant_names.forEach((invariant, index) => {
-        raw_query += `    JOIN ${invariant} ${invariant} USING(signature)\n`
-    })
+  all_invariant_names.forEach((invariant, index) => {
+    raw_query += `    JOIN ${invariant} ${invariant} USING(signature)\n`;
+  });
 
-    raw_query += part3()
+  raw_query += part3();
 
-    // Filter
-    raw_query += `    AND (${constraints.constraints})\n`
+  // Filter
+  raw_query += `    AND (${constraints.constraints})\n`;
 
-    raw_query += '    GROUP BY '
-    raw_query += invariants.join(", ") // Order according to invariant order
-    raw_query += "\n"
+  raw_query += "    GROUP BY ";
+  raw_query += invariants.join(", "); // Order according to invariant order
+  raw_query += "\n";
 
-    raw_query += '    ORDER BY '
-    raw_query += invariants.join(", ") // Order according to invariant order
+  raw_query += "    ORDER BY ";
+  raw_query += invariants.join(", "); // Order according to invariant order
 
-    raw_query += part4_points()
+  raw_query += part4_points();
 
-    invariants.concat(["mult"]).forEach((invariant, index) => {
-        raw_query += `    '${invariant}',array_to_json(array_agg(${invariant}))`
-        if (index < invariants.length) {
-            // Add , except for the last invariant
-            raw_query += ","
-        }
-        raw_query += "\n"
-    })
+  invariants.concat(["mult"]).forEach((invariant, index) => {
+    raw_query += `    '${invariant}',array_to_json(array_agg(${invariant}))`;
+    if (index < invariants.length) {
+      // Add , except for the last invariant
+      raw_query += ",";
+    }
+    raw_query += "\n";
+  });
 
-    raw_query += part5()
-    return raw_query
-
-
+  raw_query += part5();
+  return raw_query;
 }
 
-function build_polytope_query(invariants: StaticArray<TUnion<TLiteral<string>[]>>, bounds?: StaticArray<TObject<{name: TString, minimum_bound: TOptional<TNumber>, maximum_bound: TOptional<TNumber>}>>): string {
-    let raw_query = part1_polytope()
+function build_polytope_query(
+  invariants: StaticArray<TUnion<TLiteral<string>[]>>,
+  bounds?: StaticArray<
+    TObject<{
+      name: TString;
+      minimum_bound: TOptional<TNumber>;
+      maximum_bound: TOptional<TNumber>;
+    }>
+  >
+): string {
+  let raw_query = part1_polytope();
 
-    invariants.forEach((invariant, index) => {
-        raw_query += `    ${invariant}.val AS ${invariant}`
-        if (index < invariants.length-1) {
-            raw_query += ","
-        }
-        raw_query += "\n"
-    })
+  invariants.forEach((invariant, index) => {
+    raw_query += `    ${invariant}.val AS ${invariant}`;
+    if (index < invariants.length - 1) {
+      raw_query += ",";
+    }
+    raw_query += "\n";
+  });
 
-    raw_query += part2()
+  raw_query += part2();
 
-    const all_invariant_names = bounds ? [...new Set(invariants.concat(bounds.map((c) => c.name)))] : invariants// Unique on the name of invariants
+  const all_invariant_names = bounds
+    ? [...new Set(invariants.concat(bounds.map((c) => c.name)))]
+    : invariants; // Unique on the name of invariants
 
-    all_invariant_names.forEach((invariant, index) => {
-        raw_query += `    JOIN ${invariant} ${invariant} USING(signature)\n`
-    })
+  all_invariant_names.forEach((invariant, index) => {
+    raw_query += `    JOIN ${invariant} ${invariant} USING(signature)\n`;
+  });
 
-    raw_query += part3()
+  raw_query += part3();
 
-    // Filter
-    if (bounds) bounds.forEach((bound: any) => {
-        raw_query += condition(bound.name, bound.minimum_bound, bound.maximum_bound)
-        // raw_query += `    AND ${bound.name}.val >= ${bound.minimum_bound}\n`
-        // raw_query += `    AND ${bound.name}.val <= ${bound.maximum_bound}\n`
-    })
+  // Filter
+  if (bounds)
+    bounds.forEach((bound: any) => {
+      raw_query += condition(
+        bound.name,
+        bound.minimum_bound,
+        bound.maximum_bound
+      );
+      // raw_query += `    AND ${bound.name}.val >= ${bound.minimum_bound}\n`
+      // raw_query += `    AND ${bound.name}.val <= ${bound.maximum_bound}\n`
+    });
 
-    raw_query += '    GROUP BY '
-    raw_query += invariants.join(", ") // Order according to invariant order
-    raw_query += '\n'
+  raw_query += "    GROUP BY ";
+  raw_query += invariants.join(", "); // Order according to invariant order
+  raw_query += "\n";
 
+  raw_query += "    ORDER BY ";
+  raw_query += invariants.join(", "); // Order according to invariant order
 
-    raw_query += '    ORDER BY '
-    raw_query += invariants.join(", ") // Order according to invariant order
+  raw_query += part4_polytope(invariants[0], invariants[1]);
 
-    raw_query += part4_polytope(invariants[0], invariants[1])
-
-    return raw_query
+  return raw_query;
 }
 
 /**
@@ -516,129 +595,148 @@ function build_polytope_query(invariants: StaticArray<TUnion<TLiteral<string>[]>
  * @param options
  */
 export async function routes(fastify: FastifyInstance, options: any) {
-    //fastify.addSchema(phoegDefinitions())
-    fastify.get<{
-        Querystring: IGraphsQueryArgs
-    }>("/", {
-        schema: {querystring: graphsQueryArgs},
-    }, async (request, reply) => {
+  //fastify.addSchema(phoegDefinitions())
+  fastify.get<{
+    Querystring: IGraphsQueryArgs;
+  }>(
+    "/",
+    {
+      schema: { querystring: graphsQueryArgs },
+    },
+    async (request, reply) => {
+      const query_params = [request.query.order];
 
-        const query_params = [request.query.order]
+      // @ts-ignore
+      const constraints: InvariantConstraints = request.query.constraints;
 
-        // @ts-ignore
-        const constraints: InvariantConstraints = request.query.constraints
+      fastify.log.debug(constraints);
 
-        fastify.log.debug(constraints)
+      const query = build_graph_query(
+        request.query.invariants.map((e) => e.name),
+        constraints
+      );
 
-        const query = build_graph_query(request.query.invariants.map((e) => e.name), constraints)
+      fastify.log.debug("Query: " + query);
 
-        fastify.log.debug("Query: " + query)
-
-        await phoeg.cached_query(query, query_params, async (error, result) => {
-            if (error) {
-                fastify.log.error(error)
-                reply.code(400).send({})
-            } else {
-                const results: IGraphsQueryResults = result.rows[0] ? result.rows[0].json_build_object : {}
-                reply.send(results)
-            }
-        })
-    })
-
-
-
-    fastify.get<{
-        Querystring: IPolytopeQueryArgs
-    }>("/points", {
-        schema: {querystring: polytopeQueryArgs}
-    }, async (request, reply) => {
-        const query_params = [request.query.order]
-
-        const invariants = [request.query.x_invariant, request.query.y_invariant];
-        if (request.query.colour) invariants.push(request.query.colour)
-        if (request.query.constraints) invariants.concat(request.query.constraints.map(e => e.name))
-
-        const query = build_points_query(invariants, request.query.constraints)
-
-        fastify.log.debug("Query: " + query)
-
-        await phoeg.cached_query(query, query_params, async (error, result) => {
-            if (error) {
-                fastify.log.error(error)
-                reply.code(400).send({})
-            } else {
-                const results: IGraphsQueryResults = result.rows[0] ? result.rows[0].json_build_object : {}
-                reply.send(results)
-            }
-        })
-
-    })
-
-    fastify.post<{
-        Querystring: IPolytopeQueryArgs,
-        Body: PhoeglangBody
-    }>("/points", async (request, reply) => {
-        const query_params = [request.query.order]
-
-        const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar))
-        
-        // Parse the constraints
-        try {
-            parser.feed(request.body.query)
-        } catch (parseError: any) {
-            fastify.log.error("Error at character " + parseError.offset); // "Error at character 9"
-            reply.code(400).send({
-                message: "Error at character " + parseError.offset,
-                parseError: parseError
-            })
+      await phoeg.cached_query(query, query_params, async (error, result) => {
+        if (error) {
+          fastify.log.error(error);
+          reply.code(400).send({});
+        } else {
+          const results: IGraphsQueryResults = result.rows[0]
+            ? result.rows[0].json_build_object
+            : {};
+          reply.send(results);
         }
-        
-        const invariants = [request.query.x_invariant, request.query.y_invariant];
-        const constraints = parser.results[0] as PhoegLangResult
+      });
+    }
+  );
 
-        const query = build_points_phoeglang_query(invariants, constraints);
+  fastify.get<{
+    Querystring: IPolytopeQueryArgs;
+  }>(
+    "/points",
+    {
+      schema: { querystring: polytopeQueryArgs },
+    },
+    async (request, reply) => {
+      const query_params = [request.query.order];
 
-        fastify.log.debug("Query: " + query)
-        console.debug("Query: " + query)
+      const invariants = [request.query.x_invariant, request.query.y_invariant];
+      if (request.query.colour) invariants.push(request.query.colour);
+      if (request.query.constraints)
+        invariants.concat(request.query.constraints.map((e) => e.name));
 
-        await phoeg.cached_query(query, query_params, async (error, result) => {
-            if (error) {
-                fastify.log.error(error)
-                reply.code(400).send({})
-            } else {
-                const results: IGraphsQueryResults = result.rows[0] ? result.rows[0].json_build_object : {}
-                fastify.log.debug(results)
-                reply.send(results)
-            }
-        })
+      const query = build_points_query(invariants, request.query.constraints);
 
-    })
+      fastify.log.debug("Query: " + query);
 
+      await phoeg.cached_query(query, query_params, async (error, result) => {
+        if (error) {
+          fastify.log.error(error);
+          reply.code(400).send({});
+        } else {
+          const results: IGraphsQueryResults = result.rows[0]
+            ? result.rows[0].json_build_object
+            : {};
+          reply.send(results);
+        }
+      });
+    }
+  );
 
-    fastify.get<{
-        Querystring: IPolytopeQueryArgs
-    }>("/polytope", {
-        schema: {querystring: polytopeQueryArgs}
-    }, async (request, reply) => {
-        const query_params = [request.query.order]
+  fastify.post<{
+    Querystring: IPolytopeQueryArgs;
+    Body: PhoeglangBody;
+  }>("/points", async (request, reply) => {
+    const query_params = [request.query.order];
 
-        const invariants = [request.query.x_invariant, request.query.y_invariant];
-        if (request.query.colour) invariants.push(request.query.colour)
-        if (request.query.constraints) invariants.concat(request.query.constraints.map(e => e.name))
+    const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
 
-        const query = build_polytope_query(invariants, request.query.constraints)
+    // Parse the constraints
+    try {
+      parser.feed(request.body.query);
+    } catch (parseError: any) {
+      fastify.log.error("Error at character " + parseError.offset); // "Error at character 9"
+      reply.code(400).send({
+        message: "Error at character " + parseError.offset,
+        parseError: parseError,
+      });
+    }
 
-        fastify.log.debug("Query: " + query)
+    const invariants = [request.query.x_invariant, request.query.y_invariant];
+    const constraints = parser.results[0] as PhoegLangResult;
 
-        await phoeg.cached_query(query, query_params, async (error, result) => {
-            if (error) {
-                fastify.log.error(error)
-                reply.code(400).send({})
-            } else {
-                const results: IGraphsQueryResults = result.rows[0] ? result.rows[0].json_build_object : {}
-                fastify.log.debug(results)
-                reply.send(results)
-            }
-        })
-    })
+    const query = build_points_phoeglang_query(invariants, constraints);
+
+    fastify.log.debug("Query: " + query);
+    console.debug("Query: " + query);
+
+    await phoeg.cached_query(query, query_params, async (error, result) => {
+      if (error) {
+        fastify.log.error(error);
+        reply.code(400).send({});
+      } else {
+        const results: IGraphsQueryResults = result.rows[0]
+          ? result.rows[0].json_build_object
+          : {};
+        fastify.log.debug(results);
+        reply.send(results);
+      }
+    });
+  });
+
+  fastify.get<{
+    Querystring: IPolytopeQueryArgs;
+  }>(
+    "/polytope",
+    {
+      schema: { querystring: polytopeQueryArgs },
+    },
+    async (request, reply) => {
+      const query_params = [request.query.order];
+
+      const invariants = [request.query.x_invariant, request.query.y_invariant];
+      if (request.query.colour) invariants.push(request.query.colour);
+      if (request.query.constraints)
+        invariants.concat(request.query.constraints.map((e) => e.name));
+
+      const query = build_polytope_query(invariants, request.query.constraints);
+
+      fastify.log.debug("Query: " + query);
+
+      await phoeg.cached_query(query, query_params, async (error, result) => {
+        if (error) {
+          fastify.log.error(error);
+          reply.code(400).send({});
+        } else {
+          const results: IGraphsQueryResults = result.rows[0]
+            ? result.rows[0].json_build_object
+            : {};
+          fastify.log.debug(results);
+          reply.send(results);
+        }
+      });
+    }
+  );
 }

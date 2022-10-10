@@ -1,3 +1,1 @@
-abstract class Reshaper {
-
-}
+abstract class Reshaper {}
