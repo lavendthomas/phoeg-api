@@ -9,7 +9,7 @@
     "postbuild": "cp ./src/queries/*.sql ./build/queries",
     "start": "node ./build/index.js",
     "dev": "ts-node-dev --respawn ./src/index.ts",
-    "lint": "prettier --write . && eslint . --ext .ts,.tsx",
+    "lint": "prettier --write src/ && eslint src/ --ext .ts,.tsx",
     "test": "tap --node-arg=--require=ts-node/register"
   },
   "keywords": [],

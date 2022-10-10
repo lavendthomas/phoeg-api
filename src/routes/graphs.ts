@@ -16,7 +16,7 @@ import {
   INVARIANTS,
   InvariantTypes,
 } from "./invariants";
-import { PhoeglangBody } from "./phoeglang";
+import { IPhoegLangBody } from "./phoeglang";
 import nearley from "nearley";
 import grammar, { PhoegLangResult } from "../phoeglang/phoeglang";
 import { assert } from "console";
@@ -667,7 +667,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
 
   fastify.post<{
     Querystring: IPolytopeQueryArgs;
-    Body: PhoeglangBody;
+    Body: IPhoegLangBody;
   }>("/points", async (request, reply) => {
     const query_params = [request.query.order];
 
