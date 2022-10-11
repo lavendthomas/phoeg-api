@@ -64,7 +64,7 @@ export async function allInvariants(
         (invariant: any) => invariant.tablename
       );
       INVARIANTS = i;
-    } 
+    }
     return i;
   });
 }

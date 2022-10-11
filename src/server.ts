@@ -7,11 +7,11 @@ import { API_PATH, API_PORT, SERVER_ADDRESS } from "./.env";
 import { routes as endpointRoutes } from "./routes/endpoints";
 import { routes as invariantsRoutes } from "./routes/invariants";
 import { routes as phoeglangRoutes } from "./routes/phoeglang";
-import { routes as graphsRoutes } from "./routes/graphs";
+import { routes as graphsRoutes } from "./routes/graphs/graphs";
 
 export function buildServer(): FastifyInstance {
   const server = fastify({
-    logger: { 
+    logger: {
       level: "debug",
       // file: "/tmp/phoeg-api.log"
     },

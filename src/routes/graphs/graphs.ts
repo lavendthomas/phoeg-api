@@ -1,5 +1,5 @@
 import fastify, { FastifyInstance } from "fastify";
-import phoeg from "../db/phoeg";
+import phoeg from "../../db/phoeg";
 import {
   Static,
   StaticArray,
@@ -15,11 +15,12 @@ import {
   ACCEPTABLE_INVARIANTS,
   INVARIANTS,
   InvariantTypes,
-} from "./invariants";
-import { IPhoegLangBody } from "./phoeglang";
+} from "../invariants";
+import { IPhoegLangBody } from "../phoeglang";
 import nearley from "nearley";
-import grammar, { PhoegLangResult } from "../phoeglang/phoeglang";
+import grammar, { PhoegLangResult } from "../../phoeglang/phoeglang";
 import { assert } from "console";
+import { QueryResult } from "pg";
 
 type Invariant = typeof ACCEPTABLE_INVARIANTS[number];
 
@@ -229,6 +230,23 @@ interface IGraphsQueryResults {
   chi: number[];
 }
 
+export const pointsPhoegLangQueryArgs = Type.Object({
+  order: Type.Integer({
+    minimum: 1,
+    maximum: 10,
+    default: 8,
+    description: "Maximum size of the graphs.",
+  }),
+});
+export type IPointsPhoegLangQueryArgs = Static<typeof pointsPhoegLangQueryArgs>;
+
+export const pointsPhoegLangBody = Type.Optional(
+  Type.Object({
+    query: Type.String(),
+  })
+);
+export type IPointsPhoegLangBody = Static<typeof pointsPhoegLangBody>;
+
 function part1(): string {
   return `WITH data AS (
 SELECT
@@ -356,7 +374,8 @@ function condition(
 
 function build_graph_query(
   invariants: StaticArray<TUnion<TLiteral<string>[]>>,
-  constraints: InvariantConstraints
+  bounds: InvariantConstraints,
+  constraints?: PhoegLangResult
 ): string {
   let raw_query = part1();
 
@@ -370,24 +389,26 @@ function build_graph_query(
 
   raw_query += `    FROM num_vertices n\n`;
 
-  const all_invariant_names = constraints
-    ? [...new Set(invariants.concat(constraints.map((c) => c.name)))]
+  const all_invariant_names = bounds
+    ? [...new Set(invariants.concat(bounds.map((c) => c.name)).concat(constraints?.invariants || []))]
     : invariants; // Unique on the name of invariants
 
-  all_invariant_names.forEach((invariant, index) => {
+  all_invariant_names.forEach((invariant) => {
     raw_query += `    JOIN ${invariant} ${invariant} USING(signature)\n`;
   });
 
   raw_query += part3();
 
-  // Filter
-  if (constraints) {
-    constraints.forEach((cst) => {
+  // Filter simple constraints
+  if (bounds) {
+    bounds.forEach((cst) => {
       raw_query += condition(cst.name, cst.minimum_bound, cst.maximum_bound);
-      // raw_query += `    AND ${cst.name}.val > ${cst.minimum_bound}\n`
-      // raw_query += `    AND ${cst.name}.val < ${cst.maximum_bound}\n`
     });
   }
+
+  // Filter advanced constraints
+  if (constraints)
+    raw_query += `    AND (${constraints.constraints})\n`;
 
   raw_query += "    ORDER BY ";
   raw_query += invariants.join(", "); // Order according to invariant order
@@ -415,7 +436,8 @@ function build_points_query(
       minimum_bound: TOptional<TNumber>;
       maximum_bound: TOptional<TNumber>;
     }>
-  >
+  >,
+  constraints?: PhoegLangResult
 ): string {
   let raw_query = part1_points();
 
@@ -427,68 +449,8 @@ function build_points_query(
     raw_query += "\n";
   });
 
-  raw_query += part2();
-
-  const all_invariant_names = bounds
-    ? [...new Set(invariants.concat(bounds.map((c) => c.name)))]
-    : invariants; // Unique on the name of invariants
-
-  all_invariant_names.forEach((invariant, index) => {
-    raw_query += `    JOIN ${invariant} ${invariant} USING(signature)\n`;
-  });
-
-  raw_query += part3();
-
-  // Filter
-  if (bounds)
-    bounds.forEach((bound) => {
-      raw_query += condition(
-        bound.name,
-        bound.minimum_bound,
-        bound.maximum_bound
-      );
-      // raw_query += `    AND ${bound.name}.val >= ${bound.minimum_bound}\n`
-      // raw_query += `    AND ${bound.name}.val <= ${bound.maximum_bound}\n`
-    });
-
-  raw_query += "    GROUP BY ";
-  raw_query += invariants.join(", "); // Order according to invariant order
-  raw_query += "\n";
-
-  raw_query += "    ORDER BY ";
-  raw_query += invariants.join(", "); // Order according to invariant order
-
-  raw_query += part4_points();
-
-  invariants.concat(["mult"]).forEach((invariant, index) => {
-    raw_query += `    '${invariant}',array_to_json(array_agg(${invariant}))`;
-    if (index < invariants.length) {
-      // Add , except for the last invariant
-      raw_query += ",";
-    }
-    raw_query += "\n";
-  });
-
-  raw_query += part5();
-  return raw_query;
-}
-
-function build_points_phoeglang_query(
-  invariants: StaticArray<TUnion<TLiteral<string>[]>>,
-  constraints: PhoegLangResult
-) {
-  let raw_query = part1_points();
-
-  invariants.forEach((invariant, index) => {
-    raw_query += `    ${invariant}.val AS ${invariant}`;
-    if (index < invariants.length - 1) {
-      raw_query += ",";
-    }
-    raw_query += "\n";
-  });
-
   // Make sure that all invariants exist in the constraints
-  constraints.invariants.forEach((invariant) => {
+  constraints?.invariants.forEach((invariant) => {
     assert(
       invariants.includes(invariant),
       `Invariant ${invariant} not found in the invariants`
@@ -497,18 +459,29 @@ function build_points_phoeglang_query(
 
   raw_query += part2();
 
-  const all_invariant_names = [
-    ...new Set(invariants.concat(constraints.invariants)),
-  ]; // Unique on the name of invariants
+  const all_invariant_names = bounds
+    ? [...new Set(invariants.concat(bounds.map((c) => c.name)).concat(constraints?.invariants || []))]
+    : invariants; // Unique on the name of invariants
 
-  all_invariant_names.forEach((invariant, index) => {
+  all_invariant_names.forEach((invariant) => {
     raw_query += `    JOIN ${invariant} ${invariant} USING(signature)\n`;
   });
 
   raw_query += part3();
 
-  // Filter
-  raw_query += `    AND (${constraints.constraints})\n`;
+  // Filter simple constraints
+  if (bounds)
+    bounds.forEach((bound) => {
+      raw_query += condition(
+        bound.name,
+        bound.minimum_bound,
+        bound.maximum_bound
+      );
+    });
+  
+  // Filter advanced constraints
+  if (constraints)
+    raw_query += `    AND (${constraints.constraints})\n`;
 
   raw_query += "    GROUP BY ";
   raw_query += invariants.join(", "); // Order according to invariant order
@@ -540,7 +513,8 @@ function build_polytope_query(
       minimum_bound: TOptional<TNumber>;
       maximum_bound: TOptional<TNumber>;
     }>
-  >
+  >,
+  constraints?: PhoegLangResult
 ): string {
   let raw_query = part1_polytope();
 
@@ -552,10 +526,18 @@ function build_polytope_query(
     raw_query += "\n";
   });
 
+  // Make sure that all invariants exist in the constraints
+  constraints?.invariants.forEach((invariant) => {
+    assert(
+      invariants.includes(invariant),
+      `Invariant ${invariant} not found in the invariants`
+    );
+  });
+
   raw_query += part2();
 
   const all_invariant_names = bounds
-    ? [...new Set(invariants.concat(bounds.map((c) => c.name)))]
+    ? [...new Set(invariants.concat(bounds.map((c) => c.name)).concat(constraints?.invariants || []))]
     : invariants; // Unique on the name of invariants
 
   all_invariant_names.forEach((invariant, index) => {
@@ -572,9 +554,11 @@ function build_polytope_query(
         bound.minimum_bound,
         bound.maximum_bound
       );
-      // raw_query += `    AND ${bound.name}.val >= ${bound.minimum_bound}\n`
-      // raw_query += `    AND ${bound.name}.val <= ${bound.maximum_bound}\n`
     });
+
+  // Filter advanced constraints
+  if (constraints)
+    raw_query += `    AND (${constraints.constraints})\n`;
 
   raw_query += "    GROUP BY ";
   raw_query += invariants.join(", "); // Order according to invariant order
@@ -595,25 +579,29 @@ function build_polytope_query(
  * @param options
  */
 export async function routes(fastify: FastifyInstance, options: any) {
-  //fastify.addSchema(phoegDefinitions())
-  fastify.get<{
+  // fastify.addSchema(phoegDefinitions())
+  fastify.post<{
     Querystring: IGraphsQueryArgs;
+    Body: IPointsPhoegLangBody;
   }>(
     "/",
     {
-      schema: { querystring: graphsQueryArgs },
+      schema: { 
+        querystring: graphsQueryArgs,
+        body: pointsPhoegLangBody,
+      },
     },
     async (request, reply) => {
       const query_params = [request.query.order];
 
       // @ts-ignore
-      const constraints: InvariantConstraints = request.query.constraints;
+      const invariants: InvariantConstraints = request.query.invariants;
 
-      fastify.log.debug(constraints);
+      fastify.log.debug(invariants);
 
       const query = build_graph_query(
-        request.query.invariants.map((e) => e.name),
-        constraints
+        invariants.map((e) => e.name),
+        invariants
       );
 
       fastify.log.debug("Query: " + query);
@@ -632,22 +620,42 @@ export async function routes(fastify: FastifyInstance, options: any) {
     }
   );
 
-  fastify.get<{
+  fastify.post<{
     Querystring: IPolytopeQueryArgs;
+    Body: IPointsPhoegLangBody;
   }>(
     "/points",
     {
-      schema: { querystring: polytopeQueryArgs },
+      schema: {
+        querystring: polytopeQueryArgs,
+        body: pointsPhoegLangBody,
+      },
     },
     async (request, reply) => {
       const query_params = [request.query.order];
+      const bounds = request.query.constraints;
+
+      const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
+
+      // Parse the advanced constraints
+      try {
+        parser.feed(request.body.query||"");
+      } catch (parseError: any) {
+        fastify.log.error("Error at character " + parseError.offset); // "Error at character 9"
+        reply.code(400).send({
+          message: "Error at character " + parseError.offset,
+          parseError: parseError,
+        });
+      }
 
       const invariants = [request.query.x_invariant, request.query.y_invariant];
       if (request.query.colour) invariants.push(request.query.colour);
-      if (request.query.constraints)
-        invariants.concat(request.query.constraints.map((e) => e.name));
+      if (bounds)
+        invariants.concat(bounds.map((e) => e.name));
 
-      const query = build_points_query(invariants, request.query.constraints);
+      const advancedConstraints = parser.results[0] as PhoegLangResult;
+
+      const query = build_points_query(invariants, bounds , advancedConstraints);
 
       fastify.log.debug("Query: " + query);
       console.debug("Query: " + query);
@@ -660,6 +668,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
           const results: IGraphsQueryResults = result.rows[0]
             ? result.rows[0].json_build_object
             : {};
+          fastify.log.debug(results);
           reply.send(results);
         }
       });
@@ -668,64 +677,43 @@ export async function routes(fastify: FastifyInstance, options: any) {
 
   fastify.post<{
     Querystring: IPolytopeQueryArgs;
-    Body: IPhoegLangBody;
-  }>("/points", async (request, reply) => {
-    const query_params = [request.query.order];
-
-    const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
-
-    // Parse the constraints
-    try {
-      parser.feed(request.body.query);
-    } catch (parseError: any) {
-      fastify.log.error("Error at character " + parseError.offset); // "Error at character 9"
-      reply.code(400).send({
-        message: "Error at character " + parseError.offset,
-        parseError: parseError,
-      });
-    }
-
-    const invariants = [request.query.x_invariant, request.query.y_invariant];
-    const constraints = parser.results[0] as PhoegLangResult;
-
-    const query = build_points_phoeglang_query(invariants, constraints);
-
-    fastify.log.debug("Query: " + query);
-    console.log("Query: " + query);
-
-    await phoeg.cached_query(query, query_params, async (error, result) => {
-      if (error) {
-        fastify.log.error(error);
-        reply.code(400).send({});
-      } else {
-        const results: IGraphsQueryResults = result.rows[0]
-          ? result.rows[0].json_build_object
-          : {};
-        fastify.log.debug(results);
-        reply.send(results);
-      }
-    });
-  });
-
-  fastify.get<{
-    Querystring: IPolytopeQueryArgs;
+    Body: IPointsPhoegLangBody;
   }>(
     "/polytope",
     {
-      schema: { querystring: polytopeQueryArgs },
+      schema: { 
+        querystring: polytopeQueryArgs,
+        body: pointsPhoegLangBody
+      },
     },
     async (request, reply) => {
       const query_params = [request.query.order];
+      const bounds = request.query.constraints;
+
+      const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
+
+      // Parse the advanced constraints
+      try {
+        parser.feed(request.body.query||"");
+      } catch (parseError: any) {
+        fastify.log.error("Error at character " + parseError.offset); // "Error at character 9"
+        reply.code(400).send({
+          message: "Error at character " + parseError.offset,
+          parseError: parseError,
+        });
+      }
 
       const invariants = [request.query.x_invariant, request.query.y_invariant];
       if (request.query.colour) invariants.push(request.query.colour);
-      if (request.query.constraints)
-        invariants.concat(request.query.constraints.map((e) => e.name));
+      if (bounds)
+        invariants.concat(bounds.map((e) => e.name));
 
-      const query = build_polytope_query(invariants, request.query.constraints);
+      const advancedConstraints = parser.results[0] as PhoegLangResult;
+
+      const query = build_polytope_query(invariants, bounds, advancedConstraints);
 
       fastify.log.debug("Query: " + query);
-      console.log("Query: " + query);
+      console.debug("Query: " + query);
 
       await phoeg.cached_query(query, query_params, async (error, result) => {
         if (error) {

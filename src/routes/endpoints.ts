@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
 
-import { graphQueryArgsFn, phoegDefinitions } from "./graphs";
+import { graphQueryArgsFn, phoegDefinitions } from "./graphs/graphs";
 import { allInvariants, InvariantTypes } from "./invariants";
 
 export async function routes(fastify: FastifyInstance, options: any) {
