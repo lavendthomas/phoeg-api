@@ -1,4 +1,4 @@
-import { Client, Pool, QueryResult } from "pg";
+import { Pool, QueryResult } from "pg";
 import { POSTGRESQL_LOGIN, REDIS_LOGIN } from "../.env";
 import { createClient } from "redis";
 import { sha1 } from "sha.js";
