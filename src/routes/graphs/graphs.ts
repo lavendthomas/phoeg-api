@@ -1,6 +1,14 @@
 import { FastifyInstance } from "fastify";
 import phoeg from "../../db/phoeg";
-import { StaticArray, TLiteral, TUnion } from "@sinclair/typebox";
+import {
+  StaticArray,
+  TLiteral,
+  TNumber,
+  TObject,
+  TOptional,
+  TString,
+  TUnion,
+} from "@sinclair/typebox";
 import nearley from "nearley";
 import grammar, { PhoegLangResult } from "../../phoeglang/phoeglang";
 import {
@@ -82,6 +90,80 @@ function build_graph_query(
   return raw_query;
 }
 
+function postPolytopeOrPoints(
+  fastify: FastifyInstance,
+  endpoint: string,
+  build_query_function: (
+    invariants: StaticArray<TUnion<TLiteral<string>[]>>,
+    bounds?: StaticArray<
+      TObject<{
+        name: TString;
+        minimum_bound: TOptional<TNumber>;
+        maximum_bound: TOptional<TNumber>;
+      }>
+    >,
+    constraints?: PhoegLangResult
+  ) => string
+) {
+  return fastify.post<{
+    Querystring: IPolytopeQueryArgs;
+    Body: IPointsPhoegLangBody;
+  }>(
+    endpoint,
+    {
+      schema: {
+        querystring: polytopeQueryArgs,
+        body: pointsPhoegLangBody,
+      },
+    },
+    async (request, reply) => {
+      const query_params = [request.query.order];
+      const bounds = request.query.constraints;
+
+      const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
+
+      // Parse the advanced constraints
+      try {
+        parser.feed(request.body.query || "");
+      } catch (parseError: any) {
+        fastify.log.error("Error at character " + parseError.offset); // "Error at character 9"
+        reply.code(400).send({
+          message: "Error at character " + parseError.offset,
+          parseError: parseError,
+        });
+      }
+
+      const invariants = [request.query.x_invariant, request.query.y_invariant];
+      if (request.query.colour) invariants.push(request.query.colour);
+      if (bounds) invariants.concat(bounds.map((e) => e.name));
+
+      const advancedConstraints = parser.results[0] as PhoegLangResult;
+
+      const query = build_query_function(
+        invariants,
+        bounds,
+        advancedConstraints
+      );
+
+      fastify.log.debug("Query: " + query);
+      console.debug("Query: " + query);
+
+      await phoeg.cached_query(query, query_params, async (error, result) => {
+        if (error) {
+          fastify.log.error(error);
+          reply.code(400).send({});
+        } else {
+          const results: IGraphsQueryResults = result.rows[0]
+            ? result.rows[0].json_build_object
+            : {};
+          fastify.log.debug(results);
+          reply.send(results);
+        }
+      });
+    }
+  );
+}
+
 /**
  * Execute a request to the phoeg database
  * WARNING: unsafe
@@ -130,115 +212,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
     }
   );
 
-  fastify.post<{
-    Querystring: IPolytopeQueryArgs;
-    Body: IPointsPhoegLangBody;
-  }>(
-    "/points",
-    {
-      schema: {
-        querystring: polytopeQueryArgs,
-        body: pointsPhoegLangBody,
-      },
-    },
-    async (request, reply) => {
-      const query_params = [request.query.order];
-      const bounds = request.query.constraints;
+  postPolytopeOrPoints(fastify, "/points", build_points_query);
 
-      const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
-
-      // Parse the advanced constraints
-      try {
-        parser.feed(request.body.query || "");
-      } catch (parseError: any) {
-        fastify.log.error("Error at character " + parseError.offset); // "Error at character 9"
-        reply.code(400).send({
-          message: "Error at character " + parseError.offset,
-          parseError: parseError,
-        });
-      }
-
-      const invariants = [request.query.x_invariant, request.query.y_invariant];
-      if (request.query.colour) invariants.push(request.query.colour);
-      if (bounds) invariants.concat(bounds.map((e) => e.name));
-
-      const advancedConstraints = parser.results[0] as PhoegLangResult;
-
-      const query = build_points_query(invariants, bounds, advancedConstraints);
-
-      fastify.log.debug("Query: " + query);
-      console.debug("Query: " + query);
-
-      await phoeg.cached_query(query, query_params, async (error, result) => {
-        if (error) {
-          fastify.log.error(error);
-          reply.code(400).send({});
-        } else {
-          const results: IGraphsQueryResults = result.rows[0]
-            ? result.rows[0].json_build_object
-            : {};
-          fastify.log.debug(results);
-          reply.send(results);
-        }
-      });
-    }
-  );
-
-  fastify.post<{
-    Querystring: IPolytopeQueryArgs;
-    Body: IPointsPhoegLangBody;
-  }>(
-    "/polytope",
-    {
-      schema: {
-        querystring: polytopeQueryArgs,
-        body: pointsPhoegLangBody,
-      },
-    },
-    async (request, reply) => {
-      const query_params = [request.query.order];
-      const bounds = request.query.constraints;
-
-      const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
-
-      // Parse the advanced constraints
-      try {
-        parser.feed(request.body.query || "");
-      } catch (parseError: any) {
-        fastify.log.error("Error at character " + parseError.offset); // "Error at character 9"
-        reply.code(400).send({
-          message: "Error at character " + parseError.offset,
-          parseError: parseError,
-        });
-      }
-
-      const invariants = [request.query.x_invariant, request.query.y_invariant];
-      if (request.query.colour) invariants.push(request.query.colour);
-      if (bounds) invariants.concat(bounds.map((e) => e.name));
-
-      const advancedConstraints = parser.results[0] as PhoegLangResult;
-
-      const query = build_polytope_query(
-        invariants,
-        bounds,
-        advancedConstraints
-      );
-
-      fastify.log.debug("Query: " + query);
-      console.debug("Query: " + query);
-
-      await phoeg.cached_query(query, query_params, async (error, result) => {
-        if (error) {
-          fastify.log.error(error);
-          reply.code(400).send({});
-        } else {
-          const results: IGraphsQueryResults = result.rows[0]
-            ? result.rows[0].json_build_object
-            : {};
-          fastify.log.debug(results);
-          reply.send(results);
-        }
-      });
-    }
-  );
+  postPolytopeOrPoints(fastify, "/polytope", build_polytope_query);
 }
