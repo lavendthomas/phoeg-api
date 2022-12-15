@@ -1,7 +1,8 @@
-import { FastifyInstance } from "fastify";
-import phoeg from "../../db/phoeg";
 import {
   Static,
+  StaticArray,
+  TLiteral,
+  TUnion,
   Type,
 } from "@sinclair/typebox";
 import {
@@ -331,6 +332,24 @@ SELECT ST_AsText(ST_ConvexHull(ST_Collect(ST_Point(${invariants.join(
     ","
 )})))) FROM data;`;
 }
+
+export function part_invariants_to_json(invariants: StaticArray<TUnion<TLiteral<string>[]>>): string {
+  let res = "";
+  invariants.concat(["mult"]).forEach((invariant, index) => {
+    res += `    '${invariant}',array_to_json(array_agg(${invariant}))`;
+    if (index < invariants.length) {
+      // Add , except for the last invariant
+      res += ",";
+    }
+    res += "\n";
+  });
+  return res;
+}
+
+export function part_empty(): string {
+  return "";
+}
+
 
 export function condition(
 invariant_name: string,
