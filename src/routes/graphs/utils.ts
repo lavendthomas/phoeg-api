@@ -1,10 +1,4 @@
-import {
-  Static,
-  StaticArray,
-  TLiteral,
-  TUnion,
-  Type,
-} from "@sinclair/typebox";
+import { Static, StaticArray, TLiteral, TUnion, Type } from "@sinclair/typebox";
 import {
   ACCEPTABLE_INVARIANTS,
   INVARIANTS,
@@ -236,51 +230,52 @@ export const pointsPhoegLangBody = Type.Optional(
 );
 export type IPointsPhoegLangBody = Static<typeof pointsPhoegLangBody>;
 
-
 export function part_select_signature(): string {
-return `WITH data AS (
+  return `WITH data AS (
 SELECT
     n.signature AS sig,\n`;
 }
 
 export function part_select_count(): string {
-return `WITH data AS (
+  return `WITH data AS (
 SELECT
     COUNT(*) as mult,\n`;
 }
 
 export function part_select(): string {
-return `WITH data AS (
+  return `WITH data AS (
 SELECT\n`;
 }
 
 export function part_from(): string {
-return `    FROM num_vertices n\n`;
+  return `    FROM num_vertices n\n`;
 }
 
 export function part_where_val(): string {
-return `    WHERE n.val = $1\n`;
+  return `    WHERE n.val = $1\n`;
 }
 
 export function part_select_json_build_array(): string {
-return `
+  return `
 )
 SELECT json_build_object(
     'sig',array_to_json(array_agg(sig)),\n`;
 }
 
 export function part_json_build_object(): string {
-return `
+  return `
 )
 SELECT json_build_object(\n`;
 }
 
-export function part_compute_polytope(invariant1: string, invariant2: string): string {
-return `
+export function part_compute_polytope(invariants: string[]): string {
+  const invariantX = invariants[0];
+  const invariantY = invariants[1];
+  return `
 ),
 polytable as (
     -- Build the convex hull and output it as json
-    SELECT st_asgeojson(ST_ConvexHull(ST_Collect(ST_Point(${invariant1}, ${invariant2})))) as poly
+    SELECT st_asgeojson(ST_ConvexHull(ST_Collect(ST_Point(${invariantX}, ${invariantY})))) as poly
     FROM data
 ),
 points as (
@@ -322,18 +317,20 @@ group by tp;
 }
 
 export function part_from_data(): string {
-    return `)
+  return `)
 FROM data;`;
 }
 
 export function part_select_as_text(invariants: string[]): string {
-    return `)
+  return `)
 SELECT ST_AsText(ST_ConvexHull(ST_Collect(ST_Point(${invariants.join(
     ","
-)})))) FROM data;`;
+  )})))) FROM data;`;
 }
 
-export function part_invariants_to_json(invariants: StaticArray<TUnion<TLiteral<string>[]>>): string {
+export function part_invariants_to_json(
+  invariants: StaticArray<TUnion<TLiteral<string>[]>>
+): string {
   let res = "";
   invariants.concat(["mult"]).forEach((invariant, index) => {
     res += `    '${invariant}',array_to_json(array_agg(${invariant}))`;
@@ -350,32 +347,31 @@ export function part_empty(): string {
   return "";
 }
 
-
 export function condition(
-invariant_name: string,
-min_bound?: number,
-max_bound?: number
+  invariant_name: string,
+  min_bound?: number,
+  max_bound?: number
 ): string {
-if (min_bound === undefined && max_bound === undefined) {
+  if (min_bound === undefined && max_bound === undefined) {
     return "";
-}
-let raw_query = "";
-if (
+  }
+  let raw_query = "";
+  if (
     INVARIANTS.filter((i) => i.tablename === invariant_name)[0].datatype ===
     InvariantTypes.booleans
-) {
+  ) {
     if (min_bound == 0 && max_bound == 0) {
-    raw_query = `    AND ${invariant_name}.val = false\n`;
+      raw_query = `    AND ${invariant_name}.val = false\n`;
     } else if (min_bound == 1 && max_bound == 1) {
-    raw_query = `    AND ${invariant_name}.val = true\n`;
+      raw_query = `    AND ${invariant_name}.val = true\n`;
     } else {
-    console.warn(
+      console.warn(
         "Boolean invariant with non-zero min/max bounds not supported"
-    );
+      );
     }
-} else {
+  } else {
     raw_query += `    AND ${invariant_name}.val >= ${min_bound}\n`;
     raw_query += `    AND ${invariant_name}.val <= ${max_bound}\n`;
-}
-return raw_query;
+  }
+  return raw_query;
 }

@@ -1,18 +1,25 @@
 import { FastifyInstance } from "fastify";
 import phoeg from "../../db/phoeg";
-import {
-  StaticArray,
-  TLiteral,
-  TUnion,
-} from "@sinclair/typebox";
+import { StaticArray, TLiteral, TUnion } from "@sinclair/typebox";
 import nearley from "nearley";
 import grammar, { PhoegLangResult } from "../../phoeglang/phoeglang";
-import { condition, graphsQueryArgs, IGraphsQueryArgs, IGraphsQueryResults, InvariantConstraints, IPointsPhoegLangBody, IPolytopeQueryArgs, part_select_signature, part_where_val, part_select_json_build_array, part_from_data, pointsPhoegLangBody, polytopeQueryArgs } from "./utils";
+import {
+  condition,
+  graphsQueryArgs,
+  IGraphsQueryArgs,
+  IGraphsQueryResults,
+  InvariantConstraints,
+  IPointsPhoegLangBody,
+  IPolytopeQueryArgs,
+  part_select_signature,
+  part_where_val,
+  part_select_json_build_array,
+  part_from_data,
+  pointsPhoegLangBody,
+  polytopeQueryArgs,
+} from "./utils";
 import { build_points_query } from "./points";
 import { build_polytope_query } from "./polytope";
-
-
-
 
 function build_graph_query(
   invariants: StaticArray<TUnion<TLiteral<string>[]>>,
@@ -32,7 +39,13 @@ function build_graph_query(
   raw_query += `    FROM num_vertices n\n`;
 
   const all_invariant_names = bounds
-    ? [...new Set(invariants.concat(bounds.map((c) => c.name)).concat(constraints?.invariants || []))]
+    ? [
+        ...new Set(
+          invariants
+            .concat(bounds.map((c) => c.name))
+            .concat(constraints?.invariants || [])
+        ),
+      ]
     : invariants; // Unique on the name of invariants
 
   all_invariant_names.forEach((invariant) => {
@@ -49,8 +62,7 @@ function build_graph_query(
   }
 
   // Filter advanced constraints
-  if (constraints)
-    raw_query += `    AND (${constraints.constraints})\n`;
+  if (constraints) raw_query += `    AND (${constraints.constraints})\n`;
 
   raw_query += "    ORDER BY ";
   raw_query += invariants.join(", "); // Order according to invariant order
@@ -70,10 +82,6 @@ function build_graph_query(
   return raw_query;
 }
 
-
-
-
-
 /**
  * Execute a request to the phoeg database
  * WARNING: unsafe
@@ -88,7 +96,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
   }>(
     "/",
     {
-      schema: { 
+      schema: {
         querystring: graphsQueryArgs,
         body: pointsPhoegLangBody,
       },
@@ -141,7 +149,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
 
       // Parse the advanced constraints
       try {
-        parser.feed(request.body.query||"");
+        parser.feed(request.body.query || "");
       } catch (parseError: any) {
         fastify.log.error("Error at character " + parseError.offset); // "Error at character 9"
         reply.code(400).send({
@@ -152,12 +160,11 @@ export async function routes(fastify: FastifyInstance, options: any) {
 
       const invariants = [request.query.x_invariant, request.query.y_invariant];
       if (request.query.colour) invariants.push(request.query.colour);
-      if (bounds)
-        invariants.concat(bounds.map((e) => e.name));
+      if (bounds) invariants.concat(bounds.map((e) => e.name));
 
       const advancedConstraints = parser.results[0] as PhoegLangResult;
 
-      const query = build_points_query(invariants, bounds , advancedConstraints);
+      const query = build_points_query(invariants, bounds, advancedConstraints);
 
       fastify.log.debug("Query: " + query);
       console.debug("Query: " + query);
@@ -183,9 +190,9 @@ export async function routes(fastify: FastifyInstance, options: any) {
   }>(
     "/polytope",
     {
-      schema: { 
+      schema: {
         querystring: polytopeQueryArgs,
-        body: pointsPhoegLangBody
+        body: pointsPhoegLangBody,
       },
     },
     async (request, reply) => {
@@ -196,7 +203,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
 
       // Parse the advanced constraints
       try {
-        parser.feed(request.body.query||"");
+        parser.feed(request.body.query || "");
       } catch (parseError: any) {
         fastify.log.error("Error at character " + parseError.offset); // "Error at character 9"
         reply.code(400).send({
@@ -207,12 +214,15 @@ export async function routes(fastify: FastifyInstance, options: any) {
 
       const invariants = [request.query.x_invariant, request.query.y_invariant];
       if (request.query.colour) invariants.push(request.query.colour);
-      if (bounds)
-        invariants.concat(bounds.map((e) => e.name));
+      if (bounds) invariants.concat(bounds.map((e) => e.name));
 
       const advancedConstraints = parser.results[0] as PhoegLangResult;
 
-      const query = build_polytope_query(invariants, bounds, advancedConstraints);
+      const query = build_polytope_query(
+        invariants,
+        bounds,
+        advancedConstraints
+      );
 
       fastify.log.debug("Query: " + query);
       console.debug("Query: " + query);

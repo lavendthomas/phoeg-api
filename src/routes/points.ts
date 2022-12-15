@@ -18,7 +18,6 @@ export interface IPointsQueryResults {
   mult: number[];
 }
 
-
 /**
  * Execute a request to the phoeg database
  * WARNING: unsafe
