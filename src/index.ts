@@ -4,7 +4,6 @@ import { API_PATH, API_PORT, SERVER_ADDRESS } from "./.env";
 import {
   allInvariants,
   InvariantTypes,
-  routes as invariantsRoutes,
 } from "./routes/invariants";
 
 const server = buildServer();
