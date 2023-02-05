@@ -321,13 +321,6 @@ export function part_from_data(): string {
 FROM data;`;
 }
 
-export function part_select_as_text(invariants: string[]): string {
-  return `)
-SELECT ST_AsText(ST_ConvexHull(ST_Collect(ST_Point(${invariants.join(
-    ","
-  )})))) FROM data;`;
-}
-
 export function part_invariants_to_json(
   invariants: StaticArray<TUnion<TLiteral<string>[]>>
 ): string {
@@ -341,10 +334,6 @@ export function part_invariants_to_json(
     res += "\n";
   });
   return res;
-}
-
-export function part_empty(): string {
-  return "";
 }
 
 export function condition(

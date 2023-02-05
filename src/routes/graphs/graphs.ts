@@ -28,6 +28,7 @@ import {
 } from "./utils";
 import { build_points_query } from "./points";
 import { build_polytope_query } from "./polytope";
+import { compute_concave_hull } from "./concave";
 
 function build_graph_query(
   invariants: StaticArray<TUnion<TLiteral<string>[]>>,
@@ -103,7 +104,8 @@ function postPolytopeOrPoints(
       }>
     >,
     constraints?: PhoegLangResult
-  ) => string
+  ) => string,
+  data_processing_function?: (data: any) => any
 ) {
   return fastify.post<{
     Querystring: IPolytopeQueryArgs;
@@ -153,9 +155,16 @@ function postPolytopeOrPoints(
           fastify.log.error(error);
           reply.code(400).send({});
         } else {
-          const results: IGraphsQueryResults = result.rows[0]
+          let results = {};
+          if (data_processing_function) {
+            results = result.rows[0]
+            ? data_processing_function(result.rows[0].json_build_object)
+            : {};
+          } else {
+            results = result.rows[0]
             ? result.rows[0].json_build_object
             : {};
+          }
           fastify.log.debug(results);
           reply.send(results);
         }
@@ -215,4 +224,6 @@ export async function routes(fastify: FastifyInstance, options: any) {
   postPolytopeOrPoints(fastify, "/points", build_points_query);
 
   postPolytopeOrPoints(fastify, "/polytope", build_polytope_query);
+  
+  postPolytopeOrPoints(fastify, "/concave", build_points_query, compute_concave_hull);
 }
