@@ -221,6 +221,7 @@ export const pointsPhoegLangQueryArgs = Type.Object({
     description: "Maximum size of the graphs.",
   }),
 });
+
 export type IPointsPhoegLangQueryArgs = Static<typeof pointsPhoegLangQueryArgs>;
 
 export const pointsPhoegLangBody = Type.Optional(
@@ -228,6 +229,7 @@ export const pointsPhoegLangBody = Type.Optional(
     query: Type.String(),
   })
 );
+
 export type IPointsPhoegLangBody = Static<typeof pointsPhoegLangBody>;
 
 export function part_select_signature(): string {

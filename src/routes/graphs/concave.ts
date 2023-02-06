@@ -12,7 +12,10 @@ const result_to_coordinates = (results: any): Array<Point> => {
   const yKey: string = keys[1];
   let points: Array<Point> = [];
   for (let i = 0; i < results[xKey].length; i++) {
-    points.push({ x: results[xKey][i], y: results[yKey][i] });
+    points.push({
+      x: results[xKey][i],
+      y: results[yKey][i]
+    });
   }
   return points;
 };
@@ -106,7 +109,7 @@ const isMaxXminY = (point: Point, coordinates: Array<Point>): boolean => {
 };
 
 const computeMinMax = (coordinates: Array<Point>): MinMax => {
-  let minMax = {
+  let minMax: MinMax = {
     minX: coordinates[0].x,
     maxX: coordinates[0].x,
     minY: coordinates[0].y,

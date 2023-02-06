@@ -1,3 +1,10 @@
+export interface Coordinate {
+  x: number;
+  y: number;
+  mult: number;
+  color: number;
+}
+
 export interface Point {
   x: number;
   y: number;
@@ -19,4 +26,13 @@ export interface MinMax {
   maxX: number;
   minY: number;
   maxY: number;
+  minColor?: number;
+  maxColor?: number;
+}
+
+export interface PointResult {
+  coordinates: Array<Point>;
+  minMax: MinMax;
+  clustersList?: Array<number>;
+  allClusters?: { [key: number]: Array<Array<Point>>};
 }
