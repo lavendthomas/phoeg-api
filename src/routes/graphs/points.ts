@@ -63,6 +63,10 @@ const result_to_coordinates = (results: any): Array<Coordinate> => {
   const keys: Array<string> = Object.keys(results);
   let coordinates: Array<Coordinate> = [];
 
+  if (results[keys[0]].length === 0) {
+    return coordinates;
+  }
+
   for (let i = 0; i < results[keys[0]].length; i++) {
     coordinates.push({
       x: results[keys[0]][i],

@@ -2,6 +2,18 @@ import { Directions, MinMax, Point } from "../interfaces";
 
 export const compute_concave_hull = (results: any): Directions => {
   const coordinates = result_to_coordinates(results);
+  if (coordinates.length === 0) {
+    return {
+      minX: [],
+      minXmaxY: [],
+      maxX: [],
+      maxXminY: [],
+      minY: [],
+      maxXmaxY: [],
+      maxY: [],
+      minXminY: [],
+    };
+  }
   const minMax = computeMinMax(coordinates);
   return sort_directions(computeDirections(coordinates, minMax));
 };
@@ -14,7 +26,7 @@ const result_to_coordinates = (results: any): Array<Point> => {
   for (let i = 0; i < results[xKey].length; i++) {
     points.push({
       x: results[xKey][i],
-      y: results[yKey][i]
+      y: results[yKey][i],
     });
   }
   return points;
