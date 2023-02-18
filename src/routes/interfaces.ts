@@ -33,6 +33,5 @@ export interface MinMax {
 export interface PointResult {
   coordinates: Array<Point>;
   minMax: MinMax;
-  clustersList?: Array<number>;
-  allClusters?: { [key: number]: Array<Array<Point>>};
+  sorted: { [key: string]: Array<Point> };
 }

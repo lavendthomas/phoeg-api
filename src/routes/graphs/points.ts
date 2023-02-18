@@ -50,12 +50,11 @@ function part_end_query(invariants: string[]): string {
 export function update_points(result: any): PointResult {
   const coordinates = result_to_coordinates(result);
   const minMax = computeMinMax(coordinates);
-  const { clustersList, allClusters } = compute_all_clusters(coordinates);
+  const sorted = sort_by_color(coordinates);
   return {
     coordinates: coordinates,
     minMax: minMax,
-    clustersList: clustersList,
-    allClusters: allClusters,
+    sorted: sorted,
   };
 }
 
@@ -115,70 +114,67 @@ const computeMinMax = (coordinates: Array<Coordinate>): MinMax => {
   };
 };
 
-const compute_all_clusters = (
-  coordinates: Array<Coordinate>
-): {
-  clustersList: Array<number>;
-  allClusters: { [key: number]: Array<Array<Coordinate>> };
-} => {
-  const { colors, sortedByColor } = sort_by_color(coordinates);
-  let currentNbCluster = 2;
-  let currentSizeCluster = Math.floor(colors.length / currentNbCluster);
-  let viewedNb = [1];
-  let result: { [key: number]: Array<Array<Coordinate>> } = {
-    1: [coordinates],
-  };
-  while (currentNbCluster <= colors.length) {
-    let currentClusters = regroupPointsInCluster(
-      currentSizeCluster,
-      colors,
-      sortedByColor
-    );
-    if (!viewedNb.includes(currentClusters.length)) {
-      viewedNb.push(currentClusters.length);
-      result[currentClusters.length] = currentClusters;
-    }
-    currentNbCluster += 1;
-    currentSizeCluster = Math.ceil(colors.length / currentNbCluster);
-  }
-  return {
-    clustersList: viewedNb.sort((a, b) => a - b),
-    allClusters: result,
-  };
-};
+// const compute_all_clusters = (
+//   coordinates: Array<Coordinate>
+// ): {
+//   clustersList: Array<number>;
+//   allClusters: { [key: number]: Array<Array<Coordinate>> };
+// } => {
+//   const { colors, sortedByColor } = sort_by_color(coordinates);
+//   let currentNbCluster = 2;
+//   let currentSizeCluster = Math.floor(colors.length / currentNbCluster);
+//   let viewedNb = [1];
+//   let result: { [key: number]: Array<Array<Coordinate>> } = {
+//     1: [coordinates],
+//   };
+//   while (currentNbCluster <= colors.length) {
+//     let currentClusters = regroupPointsInCluster(
+//       currentSizeCluster,
+//       colors,
+//       sortedByColor
+//     );
+//     if (!viewedNb.includes(currentClusters.length)) {
+//       viewedNb.push(currentClusters.length);
+//       result[currentClusters.length] = currentClusters;
+//     }
+//     currentNbCluster += 1;
+//     currentSizeCluster = Math.ceil(colors.length / currentNbCluster);
+//   }
+//   return {
+//     clustersList: viewedNb.sort((a, b) => a - b),
+//     allClusters: result,
+//   };
+// };
 
-export const regroupPointsInCluster = (
-  sizeCluster: number,
-  colors: Array<number>,
-  sortedByColor: { [key: number]: Array<Coordinate> }
-) => {
-  let result = [];
-  let start = 0;
-  let end = sizeCluster;
-  while (end <= colors.length - sizeCluster) {
-    let temp = [];
-    while (start < end) {
-      temp.push(...sortedByColor[colors[start]]);
-      start += 1;
-    }
-    result.push(temp);
-    end += sizeCluster;
-  }
-  let temp = [];
-  while (start < colors.length) {
-    temp.push(...sortedByColor[colors[start]]);
-    start += 1;
-  }
-  result.push(temp);
-  return result;
-};
+// export const regroupPointsInCluster = (
+//   sizeCluster: number,
+//   colors: Array<number>,
+//   sortedByColor: { [key: number]: Array<Coordinate> }
+// ) => {
+//   let result = [];
+//   let start = 0;
+//   let end = sizeCluster;
+//   while (end <= colors.length - sizeCluster) {
+//     let temp = [];
+//     while (start < end) {
+//       temp.push(...sortedByColor[colors[start]]);
+//       start += 1;
+//     }
+//     result.push(temp);
+//     end += sizeCluster;
+//   }
+//   let temp = [];
+//   while (start < colors.length) {
+//     temp.push(...sortedByColor[colors[start]]);
+//     start += 1;
+//   }
+//   result.push(temp);
+//   return result;
+// };
 
 const sort_by_color = (
   coordinates: Array<Coordinate>
-): {
-  colors: Array<number>;
-  sortedByColor: { [key: number]: Array<Coordinate> };
-} => {
+): { [key: number]: Array<Coordinate> } => {
   let colors: Array<number> = [];
   let sortedByColor: { [key: number]: Array<Coordinate> } = {};
   for (let i = 0; i < coordinates.length; i++) {
@@ -191,8 +187,7 @@ const sort_by_color = (
       sortedByColor[colorValue].push(coordinates[i]);
     }
   }
-  colors.sort((a, b) => a - b);
-  return { colors: colors, sortedByColor: sortedByColor };
+  return sortedByColor;
 };
 
 const parse_int = (color: string | number | boolean): number => {
