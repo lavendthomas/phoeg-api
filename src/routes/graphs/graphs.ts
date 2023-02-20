@@ -105,7 +105,7 @@ function postPolytopeOrPoints(
     >,
     constraints?: PhoegLangResult
   ) => string,
-  data_processing_function?: (data: any) => any
+  data_processing_function: (data: any, order: number) => any
 ) {
   return fastify.post<{
     Querystring: IPolytopeQueryArgs;
@@ -158,7 +158,10 @@ function postPolytopeOrPoints(
           let results = {};
           if (data_processing_function) {
             results = result.rows[0]
-              ? data_processing_function(result.rows[0].json_build_object)
+              ? data_processing_function(
+                  result.rows[0].json_build_object,
+                  request.query.order
+                )
               : {};
           } else {
             results = result.rows[0] ? result.rows[0].json_build_object : {};
