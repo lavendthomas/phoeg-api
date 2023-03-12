@@ -1,10 +1,7 @@
-import { Directions, MinMax, Point } from "../interfaces";
+import { Directions, MinMax, Point } from "../../interfaces";
 
-export const compute_concave_hull = (
-  results: any,
-  order: number
-): Directions => {
-  const coordinates = result_to_coordinates(results, order);
+export const compute_concave_hull = (results: any): Directions => {
+  const coordinates = result_to_coordinates(results);
   if (coordinates.length === 0) {
     return {
       minX: [],
@@ -21,16 +18,15 @@ export const compute_concave_hull = (
   return sort_directions(computeDirections(coordinates, minMax));
 };
 
-const result_to_coordinates = (results: any, order: number): Array<Point> => {
+const result_to_coordinates = (results: any): Array<Point> => {
   const keys = Object.keys(results);
   const xKey: string = keys[0];
   const yKey: string = keys[1];
-  let points: Array<PointOrder> = [];
+  let points: Array<Point> = [];
   for (let i = 0; i < results[xKey].length; i++) {
     points.push({
       x: results[xKey][i],
       y: results[yKey][i],
-      order: order,
     });
   }
   return points;
@@ -194,9 +190,3 @@ const computeDirections = (
 
   return directions;
 };
-
-export interface PointOrder {
-  x: number;
-  y: number;
-  order: number;
-}

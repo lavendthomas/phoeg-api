@@ -47,7 +47,7 @@ function part_end_query(invariants: string[]): string {
   );
 }
 
-export function update_points(result: any, order?: number): PointResult {
+export function update_points(result: any): PointResult {
   const coordinates = result_to_coordinates(result);
   const minMax = computeMinMax(coordinates);
   const sorted = sort_by_color(coordinates);

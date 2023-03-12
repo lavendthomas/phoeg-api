@@ -28,7 +28,8 @@ import {
 } from "./utils";
 import { build_points_query, update_points } from "./points";
 import { build_polytope_query, update_polytope } from "./polytope";
-import { compute_concave_hull } from "./concave";
+import { compute_concave_hull } from "./autoconjectures/concave";
+import { postAutoconjecture } from "./autoconjectures/collect-data";
 
 function build_graph_query(
   invariants: StaticArray<TUnion<TLiteral<string>[]>>,
@@ -234,6 +235,13 @@ export async function routes(fastify: FastifyInstance, options: any) {
   postPolytopeOrPoints(
     fastify,
     "/concave",
+    build_points_query,
+    compute_concave_hull
+  );
+
+  postAutoconjecture(
+    fastify,
+    "/autoconjecture/data",
     build_points_query,
     compute_concave_hull
   );

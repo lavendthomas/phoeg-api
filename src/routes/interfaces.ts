@@ -21,6 +21,17 @@ export interface Directions {
   maxXminY: Array<Point>;
 }
 
+export const initialDirections = {
+  minY: [],
+  minXminY: [],
+  minX: [],
+  minXmaxY: [],
+  maxY: [],
+  maxXmaxY: [],
+  maxX: [],
+  maxXminY: [],
+};
+
 export interface MinMax {
   minX: number;
   maxX: number;
