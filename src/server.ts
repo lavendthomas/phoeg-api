@@ -13,7 +13,7 @@ export function buildServer(): FastifyInstance {
   const server = fastify({
     logger: {
       level: "debug",
-      // file: "/tmp/phoeg-api.log"
+      file: "/tmp/phoeg-api.log"
     },
     ajv: {
       customOptions: {
