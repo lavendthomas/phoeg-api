@@ -180,6 +180,7 @@ const sort_by_color = (
   for (let i = 0; i < coordinates.length; i++) {
     if (coordinates[i].color !== undefined) {
       const colorValue = parse_int(coordinates[i].color);
+      coordinates[i].color = colorValue;
       if (!colors.includes(colorValue)) {
         colors.push(colorValue);
         sortedByColor[colorValue] = [];
