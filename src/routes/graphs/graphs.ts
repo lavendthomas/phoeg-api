@@ -25,11 +25,13 @@ import {
   part_from_data,
   pointsPhoegLangBody,
   polytopeQueryArgs,
+  graphsQueryArgsV2,
 } from "./utils";
 import { build_points_query, update_points } from "./points";
 import { build_polytope_query, update_polytope } from "./polytope";
 import { compute_concave_hull } from "./autoconjectures/concave";
 import { postAutoconjecture } from "./autoconjectures/collect-data";
+import { postConcaves } from "./autoconjectures/concaves";
 
 function build_graph_query(
   invariants: StaticArray<TUnion<TLiteral<string>[]>>,
@@ -190,7 +192,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
     "/",
     {
       schema: {
-        querystring: graphsQueryArgs,
+        querystring: graphsQueryArgs || graphsQueryArgsV2,
         body: pointsPhoegLangBody,
       },
     },
@@ -245,4 +247,6 @@ export async function routes(fastify: FastifyInstance, options: any) {
     build_points_query,
     compute_concave_hull
   );
+
+  postConcaves(fastify, "/concaves", build_points_query, compute_concave_hull);
 }

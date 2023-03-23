@@ -1,6 +1,19 @@
 import { Directions, MinMax, Point } from "../../interfaces";
 
 export const compute_concave_hull = (results: any): Directions => {
+  const keys = Object.keys(results);
+  if (results[keys[0]] === null || results[keys[1]] === null) {
+    return {
+      minX: [],
+      minXmaxY: [],
+      maxX: [],
+      maxXminY: [],
+      minY: [],
+      maxXmaxY: [],
+      maxY: [],
+      minXminY: [],
+    };
+  }
   const coordinates = result_to_coordinates(results);
   if (coordinates.length === 0) {
     return {

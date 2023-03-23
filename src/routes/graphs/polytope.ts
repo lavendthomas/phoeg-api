@@ -121,7 +121,7 @@ export function build_polytope_or_point_query(
   return raw_query;
 }
 
-export function update_polytope(data: any, order?: number): Array<Point> {
+export function update_polytope(data: any): Array<Point> {
   let envelope: Array<Point> = data.coordinates;
   if (data.type === "polytope") {
     envelope.push(data.coordinates[0]);
