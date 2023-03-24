@@ -41,8 +41,30 @@ export interface MinMax {
   maxColor?: number;
 }
 
+export const initialMinMax = {
+  minX: 0,
+  maxX: 0,
+  minY: 0,
+  maxY: 0,
+};
+
 export interface PointResult {
   coordinates: Array<Point>;
   minMax: MinMax;
   sorted: { [key: string]: Array<Point> };
+}
+
+export interface DirectionsOrder {
+  order: number;
+  directions: Directions;
+}
+
+export interface MinMaxOrder {
+  order: number;
+  minMax: MinMax;
+}
+
+export interface PolytopeOrder {
+  order: number;
+  polytope: Array<Coordinate>;
 }

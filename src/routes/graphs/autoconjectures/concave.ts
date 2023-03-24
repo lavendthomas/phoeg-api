@@ -1,34 +1,33 @@
-import { Directions, MinMax, Point } from "../../interfaces";
+import {
+  Directions,
+  initialDirections,
+  initialMinMax,
+  MinMax,
+  Point,
+} from "../../interfaces";
 
-export const compute_concave_hull = (results: any): Directions => {
+export const compute_concave_hull = (
+  results: any
+): { minMax: MinMax; concave: Directions } => {
   const keys = Object.keys(results);
   if (results[keys[0]] === null || results[keys[1]] === null) {
     return {
-      minX: [],
-      minXmaxY: [],
-      maxX: [],
-      maxXminY: [],
-      minY: [],
-      maxXmaxY: [],
-      maxY: [],
-      minXminY: [],
+      minMax: initialMinMax,
+      concave: initialDirections,
     };
   }
   const coordinates = result_to_coordinates(results);
   if (coordinates.length === 0) {
     return {
-      minX: [],
-      minXmaxY: [],
-      maxX: [],
-      maxXminY: [],
-      minY: [],
-      maxXmaxY: [],
-      maxY: [],
-      minXminY: [],
+      minMax: initialMinMax,
+      concave: initialDirections,
     };
   }
   const minMax = computeMinMax(coordinates);
-  return sort_directions(computeDirections(coordinates, minMax));
+  return {
+    minMax: minMax,
+    concave: sort_directions(computeDirections(coordinates, minMax)),
+  };
 };
 
 const result_to_coordinates = (results: any): Array<Point> => {

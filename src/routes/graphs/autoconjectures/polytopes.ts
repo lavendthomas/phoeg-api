@@ -11,7 +11,7 @@ import { FastifyInstance } from "fastify";
 import nearley from "nearley";
 import phoeg from "../../../db/phoeg";
 import grammar, { PhoegLangResult } from "../../../phoeglang/phoeglang";
-import { DirectionsOrder, MinMaxOrder } from "../../interfaces";
+import { DirectionsOrder, MinMaxOrder, PolytopeOrder } from "../../interfaces";
 import {
   IPointsPhoegLangBody,
   IPolytopeQueryArgs,
@@ -19,7 +19,7 @@ import {
   polytopeQueryArgs,
 } from "../utils";
 
-export function postConcaves(
+export function postPolytopes(
   fastify: FastifyInstance,
   endpoint: string,
   build_query_function: (
@@ -75,8 +75,7 @@ export function postConcaves(
 
       fastify.log.debug("Query: " + query);
       console.debug("Query: " + query);
-      let res = Array<DirectionsOrder>();
-      let minMax = Array<MinMaxOrder>();
+      let res = Array<PolytopeOrder>();
 
       const orders = request.query.orders;
       if (orders) {
@@ -93,20 +92,15 @@ export function postConcaves(
               fastify.log.debug(results);
               res.push({
                 order: ord,
-                directions: results.concave,
+                polytope: results,
               });
-              minMax.push({ order: ord, minMax: results.minMax });
             }
           });
         }
       }
       res.sort((a, b) => a.order - b.order);
-      minMax.sort((a, b) => a.order - b.order);
 
-      reply.send({
-        concaves: res.map((current) => current.directions),
-        minMax: minMax.map((current) => current.minMax),
-      });
+      reply.send(res.map((current) => current.polytope));
     }
   );
 }
