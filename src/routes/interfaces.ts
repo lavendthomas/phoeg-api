@@ -10,15 +10,20 @@ export interface Point {
   y: number;
 }
 
+export interface PointOrder extends Point {
+  order: number;
+  clicked: boolean;
+}
+
 export interface Directions {
-  minY: Array<Point>;
-  minXminY: Array<Point>;
-  minX: Array<Point>;
-  minXmaxY: Array<Point>;
-  maxY: Array<Point>;
-  maxXmaxY: Array<Point>;
-  maxX: Array<Point>;
-  maxXminY: Array<Point>;
+  minY: Array<Point | PointOrder>;
+  minXminY: Array<Point | PointOrder>;
+  minX: Array<Point | PointOrder>;
+  minXmaxY: Array<Point | PointOrder>;
+  maxY: Array<Point | PointOrder>;
+  maxXmaxY: Array<Point | PointOrder>;
+  maxX: Array<Point | PointOrder>;
+  maxXminY: Array<Point | PointOrder>;
 }
 
 export const initialDirections = {

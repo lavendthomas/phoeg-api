@@ -11,7 +11,12 @@ import { FastifyInstance } from "fastify";
 import nearley from "nearley";
 import phoeg from "../../../db/phoeg";
 import grammar, { PhoegLangResult } from "../../../phoeglang/phoeglang";
-import { DirectionsOrder, MinMaxOrder } from "../../interfaces";
+import {
+  Directions,
+  DirectionsOrder,
+  initialDirections,
+  MinMaxOrder,
+} from "../../interfaces";
 import {
   IPointsPhoegLangBody,
   IPolytopeQueryArgs,
@@ -100,13 +105,37 @@ export function postConcaves(
           });
         }
       }
-      res.sort((a, b) => a.order - b.order);
+      res.sort((a, b) => a.order - b.order); // DirectionsOrder
       minMax.sort((a, b) => a.order - b.order);
 
+      const new_concaves: Array<Directions> = [];
+      for (const dirsOrder of res) {
+        const current_order: number = dirsOrder.order;
+        const current_directions: Directions = dirsOrder.directions;
+        const new_directions: Directions = convert_dirs_order(dirsOrder);
+
+        new_concaves.push({ ...new_directions });
+      }
+
       reply.send({
-        concaves: res.map((current) => current.directions),
+        concaves: new_concaves,
         minMax: minMax.map((current) => current.minMax),
       });
     }
   );
 }
+
+const convert_dirs_order = (dirs: DirectionsOrder): Directions => {
+  const new_directions: Directions = initialDirections;
+  const keys = Object.keys(dirs.directions);
+
+  for (const key of keys) {
+    const coords = [];
+    for (const coord of dirs.directions[key as keyof Directions]) {
+      coords.push({ ...coord, order: dirs.order, clicked: false });
+    }
+    new_directions[key as keyof Directions] = coords;
+  }
+
+  return new_directions;
+};
