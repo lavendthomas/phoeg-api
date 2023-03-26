@@ -55,8 +55,8 @@ export const initialMinMax = {
 
 export interface PointResult {
   coordinates: Array<Point>;
-  minMax: MinMax;
-  sorted: { [key: string]: Array<Point> };
+  minMax: MinMax | undefined;
+  sorted: { [key: string]: Array<Point> } | undefined;
 }
 
 export interface DirectionsOrder {

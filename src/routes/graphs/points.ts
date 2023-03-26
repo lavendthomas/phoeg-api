@@ -48,6 +48,21 @@ function part_end_query(invariants: string[]): string {
 }
 
 export function update_points(result: any): PointResult {
+  const keys = Object.keys(result);
+  // No data found for the given query so stop here
+  if (
+    result[keys[0]] === null ||
+    result[keys[0]].length === 0 ||
+    result[keys[1]] === null ||
+    result[keys[1]].length === 0
+  ) {
+    return {
+      coordinates: [],
+      minMax: undefined,
+      sorted: undefined,
+    };
+  }
+
   const coordinates = result_to_coordinates(result);
   const minMax = computeMinMax(coordinates);
   const sorted = sort_by_color(coordinates);
@@ -113,64 +128,6 @@ const computeMinMax = (coordinates: Array<Coordinate>): MinMax => {
     maxColor: maxColor,
   };
 };
-
-// const compute_all_clusters = (
-//   coordinates: Array<Coordinate>
-// ): {
-//   clustersList: Array<number>;
-//   allClusters: { [key: number]: Array<Array<Coordinate>> };
-// } => {
-//   const { colors, sortedByColor } = sort_by_color(coordinates);
-//   let currentNbCluster = 2;
-//   let currentSizeCluster = Math.floor(colors.length / currentNbCluster);
-//   let viewedNb = [1];
-//   let result: { [key: number]: Array<Array<Coordinate>> } = {
-//     1: [coordinates],
-//   };
-//   while (currentNbCluster <= colors.length) {
-//     let currentClusters = regroupPointsInCluster(
-//       currentSizeCluster,
-//       colors,
-//       sortedByColor
-//     );
-//     if (!viewedNb.includes(currentClusters.length)) {
-//       viewedNb.push(currentClusters.length);
-//       result[currentClusters.length] = currentClusters;
-//     }
-//     currentNbCluster += 1;
-//     currentSizeCluster = Math.ceil(colors.length / currentNbCluster);
-//   }
-//   return {
-//     clustersList: viewedNb.sort((a, b) => a - b),
-//     allClusters: result,
-//   };
-// };
-
-// export const regroupPointsInCluster = (
-//   sizeCluster: number,
-//   colors: Array<number>,
-//   sortedByColor: { [key: number]: Array<Coordinate> }
-// ) => {
-//   let result = [];
-//   let start = 0;
-//   let end = sizeCluster;
-//   while (end <= colors.length - sizeCluster) {
-//     let temp = [];
-//     while (start < end) {
-//       temp.push(...sortedByColor[colors[start]]);
-//       start += 1;
-//     }
-//     result.push(temp);
-//     end += sizeCluster;
-//   }
-//   let temp = [];
-//   while (start < colors.length) {
-//     temp.push(...sortedByColor[colors[start]]);
-//     start += 1;
-//   }
-//   result.push(temp);
-//   return result;
-// };
 
 const sort_by_color = (
   coordinates: Array<Coordinate>

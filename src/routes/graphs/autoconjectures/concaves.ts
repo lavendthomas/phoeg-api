@@ -110,8 +110,6 @@ export function postConcaves(
 
       const new_concaves: Array<Directions> = [];
       for (const dirsOrder of res) {
-        const current_order: number = dirsOrder.order;
-        const current_directions: Directions = dirsOrder.directions;
         const new_directions: Directions = convert_dirs_order(dirsOrder);
 
         new_concaves.push({ ...new_directions });
@@ -127,6 +125,7 @@ export function postConcaves(
 
 const convert_dirs_order = (dirs: DirectionsOrder): Directions => {
   const new_directions: Directions = initialDirections;
+  if (dirs.directions === undefined) return new_directions;
   const keys = Object.keys(dirs.directions);
 
   for (const key of keys) {

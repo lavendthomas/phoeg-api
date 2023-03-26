@@ -1,29 +1,25 @@
-import {
-  Directions,
-  initialDirections,
-  initialMinMax,
-  MinMax,
-  Point,
-} from "../../interfaces";
+import { Directions, MinMax, Point } from "../../interfaces";
 
 export const compute_concave_hull = (
   results: any
-): { minMax: MinMax; concave: Directions } => {
+): { minMax: MinMax | undefined; concave: Directions | undefined } => {
   const keys = Object.keys(results);
-  if (results[keys[0]] === null || results[keys[1]] === null) {
+
+  if (
+    results[keys[0]] === null ||
+    results[keys[0]].length === 0 ||
+    results[keys[1]] === null ||
+    results[keys[1]].length === 0
+  ) {
     return {
-      minMax: initialMinMax,
-      concave: initialDirections,
+      minMax: undefined,
+      concave: undefined,
     };
   }
+
   const coordinates = result_to_coordinates(results);
-  if (coordinates.length === 0) {
-    return {
-      minMax: initialMinMax,
-      concave: initialDirections,
-    };
-  }
   const minMax = computeMinMax(coordinates);
+
   return {
     minMax: minMax,
     concave: sort_directions(computeDirections(coordinates, minMax)),
@@ -61,18 +57,18 @@ const isMinY = (point: Point, minMax: MinMax): boolean => {
 };
 
 const isMinXminY = (point: Point, coordinates: Array<Point>): boolean => {
-  let ok = true;
+  let isOk = true;
   for (let i = 0; i < coordinates.length; i++) {
     if (
       point !== coordinates[i] &&
       coordinates[i].x <= point.x &&
       coordinates[i].y <= point.y
     ) {
-      ok = false;
+      isOk = false;
       break;
     }
   }
-  return ok;
+  return isOk;
 };
 
 const isMinX = (point: Point, minMax: MinMax): boolean => {
@@ -80,18 +76,18 @@ const isMinX = (point: Point, minMax: MinMax): boolean => {
 };
 
 const isMinXmaxY = (point: Point, coordinates: Array<Point>): boolean => {
-  let ok = true;
+  let isOk = true;
   for (let i = 0; i < coordinates.length; i++) {
     if (
       point !== coordinates[i] &&
       coordinates[i].x <= point.x &&
       coordinates[i].y >= point.y
     ) {
-      ok = false;
+      isOk = false;
       break;
     }
   }
-  return ok;
+  return isOk;
 };
 
 const isMaxY = (point: Point, minMax: MinMax): boolean => {
@@ -99,18 +95,18 @@ const isMaxY = (point: Point, minMax: MinMax): boolean => {
 };
 
 const isMaxXmaxY = (point: Point, coordinates: Array<Point>): boolean => {
-  let ok = true;
+  let isOk = true;
   for (let i = 0; i < coordinates.length; i++) {
     if (
       point !== coordinates[i] &&
       coordinates[i].x >= point.x &&
       coordinates[i].y >= point.y
     ) {
-      ok = false;
+      isOk = false;
       break;
     }
   }
-  return ok;
+  return isOk;
 };
 
 const isMaxX = (point: Point, minMax: MinMax): boolean => {
@@ -118,18 +114,18 @@ const isMaxX = (point: Point, minMax: MinMax): boolean => {
 };
 
 const isMaxXminY = (point: Point, coordinates: Array<Point>): boolean => {
-  let ok = true;
+  let isOk = true;
   for (let i = 0; i < coordinates.length; i++) {
     if (
       point !== coordinates[i] &&
       coordinates[i].x >= point.x &&
       coordinates[i].y <= point.y
     ) {
-      ok = false;
+      isOk = false;
       break;
     }
   }
-  return ok;
+  return isOk;
 };
 
 const computeMinMax = (coordinates: Array<Point>): MinMax => {
