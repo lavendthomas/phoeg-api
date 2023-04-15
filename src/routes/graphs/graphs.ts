@@ -25,7 +25,7 @@ import {
   part_from_data,
   pointsPhoegLangBody,
   polytopeQueryArgs,
-  graphsQueryArgsV2,
+  InvariantConstraint,
 } from "./utils";
 import { build_points_query, update_points } from "./points";
 import { build_polytope_query, update_polytope } from "./polytope";
@@ -192,7 +192,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
     "/",
     {
       schema: {
-        querystring: graphsQueryArgs || graphsQueryArgsV2,
+        querystring: graphsQueryArgs,
         body: pointsPhoegLangBody,
       },
     },
@@ -201,6 +201,12 @@ export async function routes(fastify: FastifyInstance, options: any) {
 
       // @ts-ignore
       const invariants: InvariantConstraints = request.query.invariants;
+
+      const bounds = request.query.constraints;
+
+      bounds!.forEach((cst) => {
+        invariants.push(cst as InvariantConstraint);
+      });
 
       fastify.log.debug(invariants);
 

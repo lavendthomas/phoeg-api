@@ -211,34 +211,24 @@ export const graphsQueryArgs = Type.Object({
         ".",
     }
   ),
-});
-
-export const graphsQueryArgsV2 = Type.Object({
-  // With list of orders
-  orders: Type.Array(
-    Type.Integer({
-      minimum: 1,
-      maximum: 10,
-      default: 8,
-      description: "Maximum size of the graphs.",
-    })
-  ),
-  invariants: Type.Array(
-    Type.Object({
-      name: Type.String({
-        pattern: ACCEPTABLE_INVARIANTS.join("|"),
-        examples: ACCEPTABLE_INVARIANTS,
-        title: "Invariant Name",
+  constraints: Type.Optional(
+    Type.Array(
+      Type.Object({
+        name: Type.String({
+          pattern: ACCEPTABLE_INVARIANTS.join("|"),
+          examples: ACCEPTABLE_INVARIANTS,
+          title: "Invariant Name",
+        }),
+        minimum_bound: Type.Optional(Type.Number({ title: "Minimum Bound" })),
+        maximum_bound: Type.Optional(Type.Number({ title: "Maximum Bound" })),
       }),
-      minimum_bound: Type.Optional(Type.Number({ title: "Minimum Bound" })),
-      maximum_bound: Type.Optional(Type.Number({ title: "Maximum Bound" })),
-    }),
-    {
-      description:
-        "Name of each invariant to analyse. The first two will be used on the axis. Acceptable values are: " +
-        ACCEPTABLE_INVARIANTS.join(", ") +
-        ".",
-    }
+      {
+        description:
+          "Name of each invariant to analyse. The first two will be used on the axis. Acceptable values are: " +
+          ACCEPTABLE_INVARIANTS.join(", ") +
+          ".",
+      }
+    )
   ),
 });
 
