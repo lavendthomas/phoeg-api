@@ -204,9 +204,11 @@ export async function routes(fastify: FastifyInstance, options: any) {
 
       const bounds = request.query.constraints;
 
-      bounds!.forEach((cst) => {
-        invariants.push(cst as InvariantConstraint);
-      });
+      if (bounds) {
+        bounds.forEach((cst) => {
+          invariants.push(cst as InvariantConstraint);
+        });
+      }
 
       fastify.log.debug(invariants);
 
