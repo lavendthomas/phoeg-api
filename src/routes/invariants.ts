@@ -3,12 +3,13 @@ import { Static, Type } from "@sinclair/typebox";
 import phoeg from "../db/phoeg";
 
 export enum InvariantTypes {
-  any,
-  numbers,
-  integers,
-  reals,
-  doubles,
-  booleans,
+  any = "any",
+  number = "number",
+  integer = "integer",
+  real = "real",
+  double = "double",
+  boolean = "boolean",
+  rational = "rational",
 }
 
 export class Invariant {
@@ -26,16 +27,19 @@ export class Invariant {
     this.tablename = tablename;
     switch (datatype) {
       case "integer":
-        this.datatype = InvariantTypes.integers;
+        this.datatype = InvariantTypes.integer;
         break;
       case "real":
-        this.datatype = InvariantTypes.reals;
+        this.datatype = InvariantTypes.real;
         break;
       case "double precision":
-        this.datatype = InvariantTypes.doubles;
+        this.datatype = InvariantTypes.double;
         break;
       case "boolean":
-        this.datatype = InvariantTypes.booleans;
+        this.datatype = InvariantTypes.boolean;
+        break;
+      case "rational":
+        this.datatype = InvariantTypes.rational;
         break;
     }
     this.name = name;
@@ -75,21 +79,24 @@ export async function fetchInvariants(
   let answer: Invariant[] = [];
   let query = "SELECT tablename, datatype, name, description FROM tables ";
   switch (type) {
-    case InvariantTypes.numbers:
+    case InvariantTypes.number:
       query +=
         "WHERE datatype = 'integer' or datatype = 'double precision' or datatype = 'real'";
       break;
-    case InvariantTypes.integers:
+    case InvariantTypes.integer:
       query += "WHERE datatype = 'integer'";
       break;
-    case InvariantTypes.reals:
+    case InvariantTypes.real:
       query += "WHERE datatype = 'real'";
       break;
-    case InvariantTypes.doubles:
+    case InvariantTypes.double:
       query += "WHERE datatype = 'double precision'";
       break;
-    case InvariantTypes.booleans:
+    case InvariantTypes.boolean:
       query += "WHERE datatype = 'boolean'";
+      break;
+    case InvariantTypes.rational:
+      query += "WHERE datatype = 'rational'";
       break;
   }
   query += ";";
@@ -113,26 +120,29 @@ export async function fetchInvariants(
 export async function routes(fastify: FastifyInstance, options: any) {
   fastify.get<{
     Querystring: IInvariantsQueryArgs;
-  }>("/invariants", { schema: InvariantsQueryArgs }, async (request, reply) => {
+  }>("/invariants", fastify, async (request, reply) => {
     let type: InvariantTypes;
     switch (request.query.type) {
       case null:
-        type = InvariantTypes.numbers;
+        type = InvariantTypes.number;
         break; // by default, give only numbers
       case "any":
         type = InvariantTypes.any;
         break;
       case "numbers":
-        type = InvariantTypes.numbers;
+        type = InvariantTypes.number;
         break;
       case "reals":
-        type = InvariantTypes.reals;
+        type = InvariantTypes.real;
         break;
       case "doubles":
-        type = InvariantTypes.doubles;
+        type = InvariantTypes.double;
         break;
       case "booleans":
-        type = InvariantTypes.booleans;
+        type = InvariantTypes.boolean;
+        break;
+      case "rationals":
+        type = InvariantTypes.rational;
         break;
       default:
         reply.code(400).send({ reason: "Please enter a valid type" });

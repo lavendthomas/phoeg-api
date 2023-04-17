@@ -378,7 +378,7 @@ export function condition(
   let raw_query = "";
   if (
     INVARIANTS.filter((i) => i.tablename === invariant_name)[0].datatype ===
-    InvariantTypes.booleans
+    InvariantTypes.boolean
   ) {
     if (min_bound == 0 && max_bound == 0) {
       raw_query = `    AND ${invariant_name}.val = false\n`;

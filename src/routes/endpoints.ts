@@ -12,7 +12,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
           description: "The default template.",
           path: "/graphs",
           definitions: phoegDefinitions(),
-          invariants: allInvariants(InvariantTypes.numbers),
+          invariants: allInvariants(InvariantTypes.number),
           params: graphQueryArgsFn(),
         },
       ],
