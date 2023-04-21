@@ -5,8 +5,6 @@ import {
   MinMaxRational,
   Point,
   PointRational,
-  initialDirections,
-  initialDirectionsRational,
 } from "../../interfaces";
 import Rational from "./rational";
 
@@ -340,7 +338,16 @@ const computeDirections = (
   coordinates: Array<Point>,
   minMax: MinMax
 ): Directions => {
-  const directions: Directions = initialDirections;
+  const directions: Directions = {
+    minX: [],
+    maxX: [],
+    minY: [],
+    maxY: [],
+    minXminY: [],
+    minXmaxY: [],
+    maxXminY: [],
+    maxXmaxY: [],
+  };
 
   for (let i = 0; i < coordinates.length; i++) {
     // not if else structure because a point may be on several directions
@@ -378,7 +385,16 @@ const computeDirectionsRational = (
   coordinates: Array<PointRational>,
   minMax: MinMaxRational
 ): DirectionsRational => {
-  const directions: DirectionsRational = initialDirectionsRational;
+  const directions: DirectionsRational = {
+    minX: [],
+    maxX: [],
+    minY: [],
+    maxY: [],
+    minXminY: [],
+    minXmaxY: [],
+    maxXminY: [],
+    maxXmaxY: [],
+  };
 
   for (let i = 0; i < coordinates.length; i++) {
     // not if else structure because a point may be on several directions

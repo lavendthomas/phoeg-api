@@ -15,9 +15,6 @@ import {
   Directions,
   DirectionsOrder,
   DirectionsRational,
-  initialDirections,
-  initialDirectionsRational,
-  MinMax,
   MinMaxOrder,
 } from "../../interfaces";
 import {
@@ -212,7 +209,14 @@ const regroupByDirection = (
 ): Directions | DirectionsRational => {
   if (isWithRational) {
     const new_directions: DirectionsRational = {
-      ...initialDirectionsRational,
+      minX: [],
+      maxX: [],
+      minY: [],
+      maxY: [],
+      minXminY: [],
+      minXmaxY: [],
+      maxXminY: [],
+      maxXmaxY: [],
     };
     if (dirs.directions === undefined) return new_directions;
     const keys = Object.keys(dirs.directions); // minX, maxX, minY, maxY, minXminY, maxXmaxY, etc.
@@ -231,7 +235,16 @@ const regroupByDirection = (
 
     return new_directions;
   } else {
-    const new_directions: Directions = { ...initialDirections };
+    const new_directions: Directions = {
+      minX: [],
+      maxX: [],
+      minY: [],
+      maxY: [],
+      minXminY: [],
+      minXmaxY: [],
+      maxXminY: [],
+      maxXmaxY: [],
+    };
     if (dirs.directions === undefined) return new_directions;
     const keys = Object.keys(dirs.directions); // minX, maxX, minY, maxY, minXminY, maxXmaxY, etc.
 

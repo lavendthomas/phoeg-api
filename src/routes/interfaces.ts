@@ -38,17 +38,6 @@ export interface Directions {
   maxXmaxY: Array<Point | PointOrder>;
 }
 
-export const initialDirections = {
-  minX: [],
-  maxX: [],
-  minY: [],
-  maxY: [],
-  minXminY: [],
-  minXmaxY: [],
-  maxXminY: [],
-  maxXmaxY: [],
-};
-
 export interface DirectionsRational {
   minX: Array<PointRational | PointRationalOrder>;
   maxX: Array<PointRational | PointRationalOrder>;
@@ -59,17 +48,6 @@ export interface DirectionsRational {
   maxXminY: Array<PointRational | PointRationalOrder>;
   maxXmaxY: Array<PointRational | PointRationalOrder>;
 }
-
-export const initialDirectionsRational = {
-  minX: [],
-  maxX: [],
-  minY: [],
-  maxY: [],
-  minXminY: [],
-  minXmaxY: [],
-  maxXminY: [],
-  maxXmaxY: [],
-};
 
 export interface MinMax {
   minX: number;
