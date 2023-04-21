@@ -249,7 +249,7 @@ export async function routes(fastify: FastifyInstance, options: any) {
     compute_concave_hull
   );
 
-  postConcaves(fastify, "/concaves", build_points_query, compute_concave_hull);
+  postConcaves(fastify, "/concaves");
 
   postPolytopes(fastify, "/polytopes", build_polytope_query, update_polytope);
 }
