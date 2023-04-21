@@ -74,11 +74,10 @@ const resultToCoordinates = (results: any): Array<Point> => {
   const yKey: string = keys[1];
   let points: Array<Point> = [];
   for (let i = 0; i < results[xKey].length; i++) {
-    const temp = {
+    points.push({
       x: results[xKey][i],
       y: results[yKey][i],
-    };
-    if (!points.includes(temp)) points.push(temp); // remove duplicates if coloration is used
+    });
   }
   return points;
 };
