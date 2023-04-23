@@ -61,7 +61,7 @@ export function postConcaves(fastify: FastifyInstance, endpoint: string) {
       );
 
       fastify.log.debug("Query: " + query);
-      // console.debug("Query: " + query);
+      console.debug("Query: " + query);
 
       let directionsList = Array<Directions>();
       let minMaxList = Array<MinMax>();
@@ -147,7 +147,7 @@ SELECT
 
   invariants.forEach((invariant, index) => {
     if (invariant.includes("_rational")) {
-      query += `    ${invariant}.rat AS ${invariant}`; //TODO:  addapt when DB updated
+      query += `    ${invariant}.rat AS ${invariant}`; //TODO: adapt when DB updated and pg_rational installed, add ::rational after ${invariant}
     } else {
       query += `    ${invariant}.val AS ${invariant}`;
     }

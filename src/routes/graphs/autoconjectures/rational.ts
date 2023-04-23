@@ -1,6 +1,7 @@
 class Rational {
   public numerator: number;
   public denominator: number;
+  // TODO: maybe change to simple interface if functions are not needed (see numrat.ts)
 
   constructor(numerator: number, denominator: number) {
     if (denominator === 0) {
@@ -14,7 +15,7 @@ class Rational {
     return new Rational(n, 1);
   }
 
-  isEqualTo(other: Rational): boolean {
+  equals(other: Rational): boolean {
     return (
       this.numerator * other.denominator === this.denominator * other.numerator
     );
@@ -59,7 +60,7 @@ class Rational {
   }
 
   compare(other: Rational): number {
-    if (this.isEqualTo(other)) return 0;
+    if (this.equals(other)) return 0;
     if (this.isLessThan(other)) return -1;
     return 1;
   }

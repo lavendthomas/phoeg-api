@@ -16,6 +16,7 @@ import {
   part_from_data,
   part_invariants_to_json,
 } from "./utils";
+import NumRat from "./autoconjectures/numrat";
 
 export function build_points_query(
   invariants: StaticArray<TUnion<TLiteral<string>[]>>,
@@ -120,10 +121,10 @@ const computeMinMax = (coordinates: Array<Coordinate>): MinMax => {
     }
   }
   return {
-    minX: minX,
-    maxX: maxX,
-    minY: minY,
-    maxY: maxY,
+    minX: new NumRat(minX),
+    maxX: new NumRat(maxX),
+    minY: new NumRat(minY),
+    maxY: new NumRat(maxY),
     minColor: minColor,
     maxColor: maxColor,
   };

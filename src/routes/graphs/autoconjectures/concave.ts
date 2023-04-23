@@ -1,4 +1,5 @@
 import { Directions, MinMax, Point } from "../../interfaces";
+import NumRat from "./numrat";
 
 export const compute_concave_hull = (
   results: any
@@ -32,8 +33,8 @@ const resultToCoordinates = (results: any): Array<Point> => {
   let points: Array<Point> = [];
   for (let i = 0; i < results[xKey].length; i++) {
     points.push({
-      x: results[xKey][i],
-      y: results[yKey][i],
+      x: new NumRat(results[xKey][i]),
+      y: new NumRat(results[yKey][i]),
     });
   }
   return points;
@@ -47,16 +48,16 @@ const computeMinMax = (coordinates: Array<Point>): MinMax => {
     maxY: coordinates[0].y,
   };
   for (let i = 0; i < coordinates.length; i++) {
-    if (coordinates[i].x < minMax.minX) {
+    if (coordinates[i].x.isLessThan(minMax.minX)) {
       minMax.minX = coordinates[i].x;
     }
-    if (coordinates[i].x > minMax.maxX) {
+    if (coordinates[i].x.isGreaterThan(minMax.maxX)) {
       minMax.maxX = coordinates[i].x;
     }
-    if (coordinates[i].y < minMax.minY) {
+    if (coordinates[i].y.isLessThan(minMax.minY)) {
       minMax.minY = coordinates[i].y;
     }
-    if (coordinates[i].y > minMax.maxY) {
+    if (coordinates[i].y.isGreaterThan(minMax.maxY)) {
       minMax.maxY = coordinates[i].y;
     }
   }
@@ -64,28 +65,32 @@ const computeMinMax = (coordinates: Array<Point>): MinMax => {
 };
 
 const isMinX = (point: Point, minMax: MinMax): boolean => {
-  return point.x === minMax.minX;
+  return point.x.equals(minMax.minX);
 };
 
 const isMaxX = (point: Point, minMax: MinMax): boolean => {
-  return point.x === minMax.maxX;
+  return point.x.equals(minMax.maxX);
 };
 
 const isMinY = (point: Point, minMax: MinMax): boolean => {
-  return point.y === minMax.minY;
+  return point.y.equals(minMax.minY);
 };
 
 const isMaxY = (point: Point, minMax: MinMax): boolean => {
-  return point.y === minMax.maxY;
+  return point.y.equals(minMax.maxY);
+};
+
+const equalsPoint = (point1: Point, point2: Point): boolean => {
+  return point1.x.equals(point2.x) && point1.y.equals(point2.y);
 };
 
 const isMinXminY = (point: Point, coordinates: Array<Point>): boolean => {
   let isOk = true;
   for (let i = 0; i < coordinates.length; i++) {
     if (
-      point !== coordinates[i] &&
-      coordinates[i].x <= point.x &&
-      coordinates[i].y <= point.y
+      !equalsPoint(point, coordinates[i]) &&
+      coordinates[i].x.isLessThanOrEqualTo(point.x) &&
+      coordinates[i].y.isLessThanOrEqualTo(point.y)
     ) {
       isOk = false;
       break;
@@ -98,9 +103,9 @@ const isMinXmaxY = (point: Point, coordinates: Array<Point>): boolean => {
   let isOk = true;
   for (let i = 0; i < coordinates.length; i++) {
     if (
-      point !== coordinates[i] &&
-      coordinates[i].x <= point.x &&
-      coordinates[i].y >= point.y
+      !equalsPoint(point, coordinates[i]) &&
+      coordinates[i].x.isLessThanOrEqualTo(point.x) &&
+      coordinates[i].y.isGreaterThanOrEqualTo(point.y)
     ) {
       isOk = false;
       break;
@@ -113,9 +118,9 @@ const isMaxXminY = (point: Point, coordinates: Array<Point>): boolean => {
   let isOk = true;
   for (let i = 0; i < coordinates.length; i++) {
     if (
-      point !== coordinates[i] &&
-      coordinates[i].x >= point.x &&
-      coordinates[i].y <= point.y
+      !equalsPoint(point, coordinates[i]) &&
+      coordinates[i].x.isGreaterThanOrEqualTo(point.x) &&
+      coordinates[i].y.isLessThanOrEqualTo(point.y)
     ) {
       isOk = false;
       break;
@@ -128,9 +133,9 @@ const isMaxXmaxY = (point: Point, coordinates: Array<Point>): boolean => {
   let isOk = true;
   for (let i = 0; i < coordinates.length; i++) {
     if (
-      point !== coordinates[i] &&
-      coordinates[i].x >= point.x &&
-      coordinates[i].y >= point.y
+      !equalsPoint(point, coordinates[i]) &&
+      coordinates[i].x.isGreaterThanOrEqualTo(point.x) &&
+      coordinates[i].y.isGreaterThanOrEqualTo(point.y)
     ) {
       isOk = false;
       break;
@@ -187,13 +192,15 @@ const computeDirections = (
 };
 
 const sortDirections = (directions: Directions): Directions => {
-  directions.minY.sort((a, b) => b.x - a.x);
-  directions.minXminY.sort((a, b) => b.x - a.x);
-  directions.minX.sort((a, b) => a.y - b.y);
-  directions.minXmaxY.sort((a, b) => a.x - b.x);
-  directions.maxY.sort((a, b) => a.x - b.x);
-  directions.maxXmaxY.sort((a, b) => a.x - b.x);
-  directions.maxX.sort((a, b) => b.y - a.y);
-  directions.maxXminY.sort((a, b) => b.x - a.x);
+  directions.minX.sort((a, b) => b.y.compare(a.y));
+  directions.maxX.sort((a, b) => a.y.compare(b.y));
+  directions.minY.sort((a, b) => a.x.compare(b.x));
+  directions.maxY.sort((a, b) => b.x.compare(a.x));
+
+  directions.minXminY.sort((a, b) => b.x.compare(a.x));
+  directions.minXmaxY.sort((a, b) => b.x.compare(a.x));
+  directions.maxXminY.sort((a, b) => a.x.compare(b.x));
+  directions.maxXmaxY.sort((a, b) => a.x.compare(b.x));
+
   return directions;
 };

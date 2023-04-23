@@ -1,3 +1,5 @@
+import NumRat from "./graphs/autoconjectures/numrat";
+
 export interface Coordinate {
   x: number;
   y: number;
@@ -6,11 +8,12 @@ export interface Coordinate {
 }
 
 export interface Point {
-  x: number;
-  y: number;
+  x: NumRat;
+  y: NumRat;
 }
 
 export interface Directions {
+  // for concave
   minX: Array<Point>;
   maxX: Array<Point>;
   minY: Array<Point>;
@@ -22,6 +25,7 @@ export interface Directions {
 }
 
 export interface DirectionsOrders {
+  // for concaves query
   minX: Array<Array<Point>>;
   maxX: Array<Array<Point>>;
   minY: Array<Array<Point>>;
@@ -33,10 +37,12 @@ export interface DirectionsOrders {
 }
 
 export interface MinMax {
-  minX: number;
-  maxX: number;
-  minY: number;
-  maxY: number;
+  // number or rational only in concaves
+  // (just number in points so minColor and maxColor are optional (number))
+  minX: NumRat;
+  maxX: NumRat;
+  minY: NumRat;
+  maxY: NumRat;
   minColor?: number;
   maxColor?: number;
 }
@@ -49,7 +55,7 @@ export const initialMinMax = {
 };
 
 export interface PointResult {
-  coordinates: Array<Point>;
+  coordinates: Array<Coordinate>;
   minMax: MinMax | undefined;
-  sorted: { [key: string]: Array<Point> } | undefined;
+  sorted: { [key: string]: Array<Coordinate> } | undefined;
 }
