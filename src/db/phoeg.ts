@@ -132,7 +132,6 @@ export default {
   },
 
   cached_multiple_queries: async (queries: QueryMult[]) => {
-    console.log("cached_multiple_queries");
     const psql_pool = await PooledDB.getInstance();
 
     const redis_client = await RedisClient.getInstance();
