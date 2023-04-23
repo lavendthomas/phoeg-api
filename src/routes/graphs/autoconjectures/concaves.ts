@@ -9,14 +9,9 @@ import {
 } from "@sinclair/typebox";
 import { FastifyInstance } from "fastify";
 import nearley from "nearley";
-import phoeg from "../../../db/phoeg";
+import phoeg, { QueryMult } from "../../../db/phoeg";
 import grammar, { PhoegLangResult } from "../../../phoeglang/phoeglang";
-import {
-  Directions,
-  DirectionsOrder,
-  DirectionsRational,
-  MinMaxOrder,
-} from "../../interfaces";
+import { Directions, DirectionsOrders, MinMax } from "../../interfaces";
 import {
   IPointsPhoegLangBody,
   IPolytopeQueryArgs,
@@ -25,9 +20,7 @@ import {
   polytopeQueryArgs,
 } from "../utils";
 import assert from "assert";
-import { compute_concave_hull, compute_concave_hull_rational } from "./concave";
-import { PointRational } from "../../interfaces";
-import { Point } from "../../interfaces";
+import { compute_concave_hull } from "./concave";
 
 export function postConcaves(fastify: FastifyInstance, endpoint: string) {
   return fastify.post<{
@@ -61,209 +54,84 @@ export function postConcaves(fastify: FastifyInstance, endpoint: string) {
 
       const advancedConstraints = parser.results[0] as PhoegLangResult;
 
-      let isWithRational = false;
-      invariants.forEach((invariant) => {
-        if (invariant.includes("_rational")) {
-          isWithRational = true;
-        }
-      });
+      const query = build_concaves_query(
+        invariants,
+        bounds,
+        advancedConstraints
+      );
 
-      const queries: Array<string> = [];
+      fastify.log.debug("Query: " + query);
+      // console.debug("Query: " + query);
 
-      if (isWithRational) {
-        queries.push(
-          build_concaves_query(invariants, true, bounds, advancedConstraints)
-        );
-        queries.push(
-          build_concaves_query(invariants, false, bounds, advancedConstraints)
-        );
-      } else {
-        queries.push(
-          build_concaves_query(invariants, false, bounds, advancedConstraints)
-        );
-      }
-
-      queries.forEach((query) => {
-        fastify.log.debug("Query: " + query);
-      });
-
-      let directionsOrder = Array<DirectionsOrder>();
-      let minMaxOrder = Array<MinMaxOrder>();
+      let directionsList = Array<Directions>();
+      let minMaxList = Array<MinMax>();
 
       const orders = request.query.orders;
       if (orders) {
-        for (const ord of orders) {
-          if (isWithRational) {
-            // fetch num then denom
-            await phoeg.cached_query(
-              queries[0],
-              [ord],
-              async (error, result) => {
-                if (error) {
-                  fastify.log.error(error);
-                  reply.code(400).send({});
-                } else {
-                  const results_num = result.rows[0];
-                  fastify.log.debug(results_num);
-
-                  await phoeg.cached_query(
-                    queries[1],
-                    [ord],
-                    async (error, result) => {
-                      if (error) {
-                        fastify.log.error(error);
-                        reply.code(400).send({});
-                      } else {
-                        const results_denom = result.rows[0];
-                        fastify.log.debug(results_denom);
-
-                        const results = {} as any;
-
-                        invariants.forEach((invariant) => {
-                          if (invariant.includes("_rational")) {
-                            const invariant_num = invariant.replace(
-                              "_rational",
-                              "_num"
-                            );
-                            const invariant_denom = invariant.replace(
-                              "_rational",
-                              "_denom"
-                            );
-                            results[invariant_num] =
-                              results_num.json_build_object[invariant];
-                            results[invariant_denom] =
-                              results_denom.json_build_object[invariant];
-                          } else {
-                            results[invariant] =
-                              results_num.json_build_object[invariant];
-                          }
-                        });
-                        const concaves = compute_concave_hull_rational(results);
-                        directionsOrder.push({
-                          order: ord,
-                          directions: concaves.concave,
-                        });
-                        minMaxOrder.push({
-                          order: ord,
-                          minMax: concaves.minMax,
-                        });
-                      }
-                    }
-                  );
-                }
-              }
-            );
-          } else {
-            // fetch only val
-            await phoeg.cached_query(
-              queries[0],
-              [ord],
-              async (error, result) => {
-                if (error) {
-                  fastify.log.error(error);
-                  reply.code(400).send({});
-                } else {
-                  const results = result.rows[0];
-                  fastify.log.debug(results);
-
-                  const concaves = results
-                    ? compute_concave_hull(results.json_build_object)
-                    : {
-                        minMax: undefined,
-                        concave: undefined,
-                      };
-
-                  directionsOrder.push({
-                    order: ord,
-                    directions: concaves.concave,
-                  });
-                  minMaxOrder.push({ order: ord, minMax: concaves.minMax });
-                }
-              }
-            );
-          }
+        const queries: Array<QueryMult> = [];
+        for (const order of orders) {
+          queries.push({
+            text: query,
+            params: [order],
+          });
         }
-      }
-      // Sort results by order asc
-      directionsOrder.sort((a, b) => a.order - b.order); // DirectionsOrder
-      minMaxOrder.sort((a, b) => a.order - b.order);
 
-      const new_concaves: Array<Directions | DirectionsRational> = [];
-      for (const dirsOrder of directionsOrder) {
-        const new_directions = regroupByDirection(dirsOrder, isWithRational);
+        await phoeg.cached_multiple_queries(queries).then((results) => {
+          for (const result of results) {
+            const result_data = result.rows[0].json_build_object;
+            fastify.log.debug(result_data);
 
-        new_concaves.push({ ...new_directions });
+            const res_concave = compute_concave_hull(result_data);
+
+            if (
+              res_concave.concave !== undefined &&
+              res_concave.minMax !== undefined
+            ) {
+              directionsList.push(res_concave.concave);
+              minMaxList.push(res_concave.minMax);
+            }
+          }
+        });
       }
 
       reply.send({
-        concaves: new_concaves,
-        minMax: minMaxOrder.map((current) => current.minMax),
+        concaves: regroup_by_direction(directionsList),
+        minMax: minMaxList,
       });
     }
   );
 }
 
-const regroupByDirection = (
-  dirs: DirectionsOrder,
-  isWithRational: boolean
-): Directions | DirectionsRational => {
-  if (isWithRational) {
-    const new_directions: DirectionsRational = {
-      minX: [],
-      maxX: [],
-      minY: [],
-      maxY: [],
-      minXminY: [],
-      minXmaxY: [],
-      maxXminY: [],
-      maxXmaxY: [],
-    };
-    if (dirs.directions === undefined) return new_directions;
-    const keys = Object.keys(dirs.directions); // minX, maxX, minY, maxY, minXminY, maxXmaxY, etc.
+const regroup_by_direction = (dirs: Array<Directions>): DirectionsOrders => {
+  // Array of concave hulls --> direction object with list of lists
+  let res_dirs: DirectionsOrders = {
+    minX: [],
+    maxX: [],
+    minY: [],
+    maxY: [],
+    minXminY: [],
+    minXmaxY: [],
+    maxXminY: [],
+    maxXmaxY: [],
+  };
 
-    for (const key of keys) {
-      const coords = [];
-      for (const coord of dirs.directions[key as keyof DirectionsRational]) {
-        coords.push({
-          ...(coord as PointRational),
-          order: dirs.order,
-          clicked: false,
-        });
-      }
-      new_directions[key as keyof DirectionsRational] = coords;
-    }
-
-    return new_directions;
-  } else {
-    const new_directions: Directions = {
-      minX: [],
-      maxX: [],
-      minY: [],
-      maxY: [],
-      minXminY: [],
-      minXmaxY: [],
-      maxXminY: [],
-      maxXmaxY: [],
-    };
-    if (dirs.directions === undefined) return new_directions;
-    const keys = Object.keys(dirs.directions); // minX, maxX, minY, maxY, minXminY, maxXmaxY, etc.
-
-    for (const key of keys) {
-      const coords = [];
-      for (const coord of dirs.directions[key as keyof Directions]) {
-        coords.push({ ...(coord as Point), order: dirs.order, clicked: false });
-      }
-      new_directions[key as keyof Directions] = coords;
-    }
-
-    return new_directions;
+  for (const dir of dirs) {
+    if (dir.minX) res_dirs.minX.push(dir.minX);
+    if (dir.maxX) res_dirs.maxX.push(dir.maxX);
+    if (dir.minY) res_dirs.minY.push(dir.minY);
+    if (dir.maxY) res_dirs.maxY.push(dir.maxY);
+    if (dir.minXminY) res_dirs.minXminY.push(dir.minXminY);
+    if (dir.minXmaxY) res_dirs.minXmaxY.push(dir.minXmaxY);
+    if (dir.maxXminY) res_dirs.maxXminY.push(dir.maxXminY);
+    if (dir.maxXmaxY) res_dirs.maxXmaxY.push(dir.maxXmaxY);
   }
+
+  return res_dirs;
 };
 
 const build_concaves_query = (
   // special query because invariant can be rational
   invariants: StaticArray<TUnion<TLiteral<string>[]>>,
-  is_num: boolean,
   bounds?: StaticArray<
     TObject<{
       name: TString;
@@ -279,11 +147,7 @@ SELECT
 
   invariants.forEach((invariant, index) => {
     if (invariant.includes("_rational")) {
-      if (is_num) {
-        query += `    ${invariant}.num AS ${invariant}`;
-      } else {
-        query += `    ${invariant}.denom AS ${invariant}`;
-      }
+      query += `    ${invariant}.rat AS ${invariant}`; //TODO:  addapt when DB updated
     } else {
       query += `    ${invariant}.val AS ${invariant}`;
     }

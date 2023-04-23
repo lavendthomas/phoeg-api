@@ -1,5 +1,3 @@
-import Rational from "./graphs/autoconjectures/rational";
-
 export interface Coordinate {
   x: number;
   y: number;
@@ -12,41 +10,26 @@ export interface Point {
   y: number;
 }
 
-export interface PointOrder extends Point {
-  order: number;
-  clicked: boolean;
-}
-
-export interface PointRational {
-  x: Rational;
-  y: Rational;
-}
-
-export interface PointRationalOrder extends PointRational {
-  order: number;
-  clicked: boolean;
-}
-
 export interface Directions {
-  minX: Array<Point | PointOrder>;
-  maxX: Array<Point | PointOrder>;
-  minY: Array<Point | PointOrder>;
-  maxY: Array<Point | PointOrder>;
-  minXminY: Array<Point | PointOrder>;
-  minXmaxY: Array<Point | PointOrder>;
-  maxXminY: Array<Point | PointOrder>;
-  maxXmaxY: Array<Point | PointOrder>;
+  minX: Array<Point>;
+  maxX: Array<Point>;
+  minY: Array<Point>;
+  maxY: Array<Point>;
+  minXminY: Array<Point>;
+  minXmaxY: Array<Point>;
+  maxXminY: Array<Point>;
+  maxXmaxY: Array<Point>;
 }
 
-export interface DirectionsRational {
-  minX: Array<PointRational | PointRationalOrder>;
-  maxX: Array<PointRational | PointRationalOrder>;
-  minY: Array<PointRational | PointRationalOrder>;
-  maxY: Array<PointRational | PointRationalOrder>;
-  minXminY: Array<PointRational | PointRationalOrder>;
-  minXmaxY: Array<PointRational | PointRationalOrder>;
-  maxXminY: Array<PointRational | PointRationalOrder>;
-  maxXmaxY: Array<PointRational | PointRationalOrder>;
+export interface DirectionsOrders {
+  minX: Array<Array<Point>>;
+  maxX: Array<Array<Point>>;
+  minY: Array<Array<Point>>;
+  maxY: Array<Array<Point>>;
+  minXminY: Array<Array<Point>>;
+  minXmaxY: Array<Array<Point>>;
+  maxXminY: Array<Array<Point>>;
+  maxXmaxY: Array<Array<Point>>;
 }
 
 export interface MinMax {
@@ -65,37 +48,8 @@ export const initialMinMax = {
   maxY: 0,
 };
 
-export interface MinMaxRational {
-  minX: Rational;
-  maxX: Rational;
-  minY: Rational;
-  maxY: Rational;
-}
-
-export const initialMinMaxRational = {
-  minX: new Rational(0, 1),
-  maxX: new Rational(0, 1),
-  minY: new Rational(0, 1),
-  maxY: new Rational(0, 1),
-};
-
 export interface PointResult {
   coordinates: Array<Point>;
   minMax: MinMax | undefined;
   sorted: { [key: string]: Array<Point> } | undefined;
-}
-
-export interface DirectionsOrder {
-  order: number;
-  directions: Directions | DirectionsRational | undefined;
-}
-
-export interface MinMaxOrder {
-  order: number;
-  minMax: MinMax | MinMaxRational | undefined;
-}
-
-export interface PolytopeOrder {
-  order: number;
-  polytope: Array<Coordinate>;
 }

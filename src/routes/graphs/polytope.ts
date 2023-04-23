@@ -9,7 +9,7 @@ import {
 } from "@sinclair/typebox";
 import assert from "assert";
 import { PhoegLangResult } from "../../phoeglang/phoeglang";
-import { Point } from "../interfaces";
+import { SimplifiedCoordinate } from "../interfaces";
 import {
   part_select,
   part_from,
@@ -121,8 +121,8 @@ export function build_polytope_or_point_query(
   return raw_query;
 }
 
-export function update_polytope(data: any): Array<Point> {
-  let envelope: Array<Point> = data.coordinates;
+export function update_polytope(data: any): Array<SimplifiedCoordinate> {
+  let envelope: Array<SimplifiedCoordinate> = data.coordinates;
   if (data.type === "polytope") {
     envelope.push(data.coordinates[0]);
   }

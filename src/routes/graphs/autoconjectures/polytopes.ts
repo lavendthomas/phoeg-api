@@ -9,9 +9,9 @@ import {
 } from "@sinclair/typebox";
 import { FastifyInstance } from "fastify";
 import nearley from "nearley";
-import phoeg from "../../../db/phoeg";
+import phoeg, { QueryMult } from "../../../db/phoeg";
 import grammar, { PhoegLangResult } from "../../../phoeglang/phoeglang";
-import { PolytopeOrder } from "../../interfaces";
+import { Coordinate } from "../../interfaces";
 import {
   IPointsPhoegLangBody,
   IPolytopeQueryArgs,
@@ -75,32 +75,32 @@ export function postPolytopes(
 
       fastify.log.debug("Query: " + query);
       console.debug("Query: " + query);
-      let res = Array<PolytopeOrder>();
 
-      const orders = request.query.orders;
+      let res = Array<Array<Coordinate>>();
+
+      const orders = request.query.orders; // [2, 4, 5, ...]
+
       if (orders) {
+        const queries: Array<QueryMult> = [];
         for (const ord of orders) {
-          await phoeg.cached_query(query, [ord], async (error, result) => {
-            if (error) {
-              fastify.log.error(error);
-              reply.code(400).send({});
-            } else {
-              const results = result.rows[0]
-                ? data_processing_function(result.rows[0].json_build_object)
-                : {};
-
-              fastify.log.debug(results);
-              res.push({
-                order: ord,
-                polytope: results,
-              });
-            }
+          queries.push({
+            text: query,
+            params: [ord],
           });
         }
-      }
-      res.sort((a, b) => a.order - b.order);
 
-      reply.send(res.map((current) => current.polytope));
+        await phoeg.cached_multiple_queries(queries).then((results) => {
+          for (const result of results) {
+            const order = result.order;
+            const result_data = result.rows[0].json_build_object;
+            fastify.log.debug(result_data);
+
+            res.push(result_data ? data_processing_function(result_data) : {});
+          }
+        });
+      }
+
+      reply.send(res);
     }
   );
 }

@@ -1,4 +1,4 @@
-import { Pool, QueryResult } from "pg";
+import { Pool, QueryResult, QueryResultOrder } from "pg";
 import { POSTGRESQL_LOGIN, REDIS_LOGIN } from "../.env";
 import { createClient } from "redis";
 import { sha1 } from "sha.js";
@@ -34,6 +34,26 @@ class PooledDB {
   ) {
     return PooledDB._pool.query(text, params, callback);
   }
+
+  public async query_multiple(queries: QueryMult[]) {
+    // call many queries in once
+    const res: QueryResult<any>[] = [];
+    for (const query of queries) {
+      PooledDB._pool.query(query.text, query.params).then((result) => {
+        res.push(result);
+      });
+    }
+    return res;
+  }
+
+  public async query_without_callback(text: string, params: any[]) {
+    return await PooledDB._pool.query(text, params);
+  }
+}
+
+export interface QueryMult {
+  text: string;
+  params: any[];
 }
 
 class RedisClient {
@@ -86,7 +106,7 @@ export default {
     if (await redis_client.client.exists(redis_key)) {
       console.debug("Received " + redis_key + " from cache.");
       const query_result: QueryResult = JSON.parse(
-        (await redis_client.client.get(redis_key)) as string
+        (await redis_client.client.get(redis_key)) as string // Because redis returns a string
       );
       // @ts-ignore
       callback(null, query_result);
@@ -103,11 +123,48 @@ export default {
             console.debug(
               "Querying " + redis_key + " and adding it to the cache."
             );
-            redis_client.client.set(redis_key, JSON.stringify(result));
+            redis_client.client.set(redis_key, JSON.stringify(result)); // Because redis only accepts strings
             callback(error, result);
           }
         }
       );
     }
+  },
+
+  cached_multiple_queries: async (queries: QueryMult[]) => {
+    console.log("cached_multiple_queries");
+    const psql_pool = await PooledDB.getInstance();
+
+    const redis_client = await RedisClient.getInstance();
+
+    const results: QueryResultOrder<any>[] = [];
+
+    for (const query of queries) {
+      const redis_key =
+        new sha1().update(query.text).digest("hex") +
+        JSON.stringify(query.params);
+
+      if (await redis_client.client.exists(redis_key)) {
+        console.debug("Received " + redis_key + " from cache.");
+        const query_result: QueryResult = JSON.parse(
+          (await redis_client.client.get(redis_key)) as string // Because redis returns a string
+        );
+        results.push({ ...query_result, order: query.params[0] });
+      } else {
+        await psql_pool
+          .query_without_callback(query.text, query.params)
+          .then((result) => {
+            console.debug(
+              "Querying " + redis_key + " and adding it to the cache."
+            );
+            redis_client.client.set(redis_key, JSON.stringify(result)); // Because redis only accepts strings
+            results.push({
+              ...result,
+              order: query.params[0],
+            });
+          });
+      }
+    }
+    return results;
   },
 };
