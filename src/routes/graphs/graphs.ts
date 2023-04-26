@@ -158,19 +158,20 @@ function postPolytopeOrPoints(
           fastify.log.error(error);
           reply.code(400).send({});
         } else {
-          let results = {};
+          const results = result.rows[0];
+          fastify.log.debug(results);
+          let toSend = {};
           if (data_processing_function) {
-            results = result.rows[0]
+            toSend = results
               ? data_processing_function(
-                  result.rows[0].json_build_object,
+                  results.json_build_object,
                   request.query.order
                 )
               : {};
           } else {
-            results = result.rows[0] ? result.rows[0].json_build_object : {};
+            toSend = results ? results.json_build_object : {};
           }
-          fastify.log.debug(results);
-          reply.send(results);
+          reply.send(toSend);
         }
       });
     }

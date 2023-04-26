@@ -91,11 +91,13 @@ export function postPolytopes(
 
         await phoeg.cached_multiple_queries(queries).then((results) => {
           for (const result of results) {
-            const order = result.order;
             const result_data = result.rows[0].json_build_object;
             fastify.log.debug(result_data);
+            const treated = result_data
+              ? data_processing_function(result_data)
+              : [];
 
-            res.push(result_data ? data_processing_function(result_data) : {});
+            res.push(treated);
           }
         });
       }

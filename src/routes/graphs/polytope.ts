@@ -123,8 +123,8 @@ export function build_polytope_or_point_query(
 
 export function update_polytope(data: any): Array<Point> {
   let envelope: Array<Point> = data.coordinates;
-  if (data.type === "polytope") {
-    envelope.push(data.coordinates[0]);
+  if (data.type === "Point") {
+    envelope = [data.coordinates];
   }
   return envelope;
 }

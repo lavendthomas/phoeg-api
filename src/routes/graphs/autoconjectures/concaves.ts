@@ -21,6 +21,7 @@ import {
 } from "../utils";
 import assert from "assert";
 import { compute_concave_hull } from "./concave";
+import Rational from "./rational";
 
 export function postConcaves(fastify: FastifyInstance, endpoint: string) {
   return fastify.post<{
@@ -80,6 +81,19 @@ export function postConcaves(fastify: FastifyInstance, endpoint: string) {
           for (const result of results) {
             const result_data = result.rows[0].json_build_object;
             fastify.log.debug(result_data);
+            const keys = Object.keys(result_data);
+
+            for (const key of keys) {
+              // Convert rational to Rational class
+              if (key.includes("_rational")) {
+                const data = result_data[key];
+                const temp = [];
+                for (const d of data) {
+                  temp.push(new Rational(d.num, d.denom));
+                }
+                result_data[key] = temp;
+              }
+            }
 
             const res_concave = compute_concave_hull(result_data);
 
@@ -95,39 +109,12 @@ export function postConcaves(fastify: FastifyInstance, endpoint: string) {
       }
 
       reply.send({
-        concaves: regroup_by_direction(directionsList),
+        concaves: directionsList,
         minMax: minMaxList,
       });
     }
   );
 }
-
-const regroup_by_direction = (dirs: Array<Directions>): DirectionsOrders => {
-  // Array of concave hulls --> direction object with list of lists
-  let res_dirs: DirectionsOrders = {
-    minX: [],
-    maxX: [],
-    minY: [],
-    maxY: [],
-    minXminY: [],
-    minXmaxY: [],
-    maxXminY: [],
-    maxXmaxY: [],
-  };
-
-  for (const dir of dirs) {
-    if (dir.minX) res_dirs.minX.push(dir.minX);
-    if (dir.maxX) res_dirs.maxX.push(dir.maxX);
-    if (dir.minY) res_dirs.minY.push(dir.minY);
-    if (dir.maxY) res_dirs.maxY.push(dir.maxY);
-    if (dir.minXminY) res_dirs.minXminY.push(dir.minXminY);
-    if (dir.minXmaxY) res_dirs.minXmaxY.push(dir.minXmaxY);
-    if (dir.maxXminY) res_dirs.maxXminY.push(dir.maxXminY);
-    if (dir.maxXmaxY) res_dirs.maxXmaxY.push(dir.maxXmaxY);
-  }
-
-  return res_dirs;
-};
 
 const build_concaves_query = (
   // special query because invariant can be rational
@@ -147,7 +134,7 @@ SELECT
 
   invariants.forEach((invariant, index) => {
     if (invariant.includes("_rational")) {
-      query += `    ${invariant}.rat AS ${invariant}`; //TODO: adapt when DB updated and pg_rational installed, add ::rational after ${invariant}
+      query += `    ${invariant} AS ${invariant}`;
     } else {
       query += `    ${invariant}.val AS ${invariant}`;
     }
@@ -207,6 +194,7 @@ SELECT json_build_object(\n`;
 
   invariants.concat(["mult"]).forEach((invariant, index) => {
     query += `    '${invariant}',array_to_json(array_agg(${invariant}))`;
+
     if (index < invariants.length) {
       // Add , except for the last invariant
       query += ",";
@@ -216,6 +204,5 @@ SELECT json_build_object(\n`;
 
   query += `)
 FROM data;`;
-
   return query;
 };
