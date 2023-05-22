@@ -11,7 +11,7 @@ import { FastifyInstance } from "fastify";
 import nearley from "nearley";
 import phoeg, { QueryMult } from "../../../db/phoeg";
 import grammar, { PhoegLangResult } from "../../../phoeglang/phoeglang";
-import { Directions, DirectionsOrders, MinMax } from "../../interfaces";
+import { Directions, MinMax } from "../../interfaces";
 import {
   IPointsPhoegLangBody,
   IPolytopeQueryArgs,

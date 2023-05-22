@@ -24,18 +24,6 @@ export interface Directions {
   maxXmaxY: Array<Point>;
 }
 
-export interface DirectionsOrders {
-  // for concaves query
-  minX: Array<Array<Point>>;
-  maxX: Array<Array<Point>>;
-  minY: Array<Array<Point>>;
-  maxY: Array<Array<Point>>;
-  minXminY: Array<Array<Point>>;
-  minXmaxY: Array<Array<Point>>;
-  maxXminY: Array<Array<Point>>;
-  maxXmaxY: Array<Array<Point>>;
-}
-
 export interface MinMax {
   // number or rational only in concaves
   // (just number in points so minColor and maxColor are optional (number))

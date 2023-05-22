@@ -5,6 +5,7 @@ export const compute_concave_hull = (
   results: any
 ): { minMax: MinMax | undefined; concave: Directions | undefined } => {
   const keys = Object.keys(results);
+
   if (
     results[keys[0]] === null ||
     results[keys[0]].length === 0 ||
